@@ -18,3 +18,15 @@
     font-size: 16px;
     line-height: 20px;
 }
+
+.row { 
+    width: 100%;
+    text-align: center;
+    vertical-align: top;
+}
+
+.block {
+    display: inline-block;
+    text-align: left;
+    vertical-align: top;
+}

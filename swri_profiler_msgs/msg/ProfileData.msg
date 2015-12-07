@@ -1,6 +1,17 @@
 uint32 key
-uint64 call_count
-duration total_duration
-duration abs_max_duration
+# The corresponding key for this block reported in the profiler's index.
+
+uint64 abs_call_count
+# The number of times this block has been started since the profiler
+# started.
+
+duration abs_total_duration
+# The total amount of time spent in this block since the profiler
+# started, including any current calls.
+
+duration rel_total_duration
+# The amount of time spent in this block since the previous report.
+
 duration rel_max_duration
+# The maximum amount of time spent in this call since the last report.
 

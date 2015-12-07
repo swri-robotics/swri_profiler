@@ -1,0 +1,43 @@
+<launch>
+  <node name="worker_in_root"
+        pkg="swri_profiler" 
+        type="basic_profiler_example_node">
+    <param name="fibonacci_index1" value="20"/>    
+    <param name="fibonacci_index2" value="25"/>
+  </node>
+
+  <group ns="world_model">
+    <node name="worker1_in_wm"
+          pkg="swri_profiler" 
+          type="basic_profiler_example_node">
+      <param name="fibonacci_index1" value="10"/>    
+      <param name="fibonacci_index2" value="15"/>
+    </node>
+
+    <node name="worker2_in_wm"
+          pkg="swri_profiler" 
+          type="basic_profiler_example_node">
+      <param name="fibonacci_index1" value="20"/>    
+      <param name="fibonacci_index2" value="25"/>
+    </node>
+  </group>
+
+  <group ns="localization">
+    <node name="worker1_in_loc"
+          pkg="swri_profiler" 
+          type="basic_profiler_example_node">
+      <param name="fibonacci_index1" value="10"/>    
+      <param name="fibonacci_index2" value="15"/>
+    </node>
+  </group>
+
+  <group ns="same_name">
+    <node name="same_name"
+          pkg="swri_profiler" 
+          type="basic_profiler_example_node">
+      <param name="fibonacci_index1" value="10"/>    
+      <param name="fibonacci_index2" value="15"/>
+    </node>
+  </group>
+
+</launch>    

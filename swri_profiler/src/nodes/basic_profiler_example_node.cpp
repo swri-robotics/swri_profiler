@@ -34,7 +34,7 @@ class BasicProfilerExampleNode
     (void)ignored;
 
     pnh_.param("fibonacci_index1", fibonacci_index1_, 30);
-    pnh_.param("fibonacci_index2", fibonacci_index2_, 32);
+    pnh_.param("fibonacci_index2", fibonacci_index2_, 40);
 
     update_timer_ = nh_.createTimer(ros::Duration(1/10.0),
                                     &BasicProfilerExampleNode::handleUpdateTimer,
