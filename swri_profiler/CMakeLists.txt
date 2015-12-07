@@ -1,6 +1,17 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(swri_profiler)
 
+set(BUILD_DEPS
+  std_msgs 
+  swri_profiler_msgs
+  roscpp)
+
+set(RUNTIME_DEPS
+  std_msgs 
+  swri_profiler_msgs 
+  roscpp)
+
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 
 find_package(catkin REQUIRED)
@@ -21,6 +32,8 @@ add_library(${PROJECT_NAME}
   )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
+add_executable(basic_profiler_example_node src/nodes/basic_profiler_example_node.cpp)
+target_link_libraries(basic_profiler_example_node ${PROJECT_NAME})
 
 add_dependencies(${PROJECT_NAME} swri_profiler_msgs_generate_messages_cpp)
 
