@@ -7,6 +7,8 @@
 #include <swri_profiler_msgs/ProfileData.h>
 #include <swri_profiler_msgs/ProfileDataArray.h>
 
+
+
 namespace spm = swri_profiler_msgs;
 
 namespace swri_profiler
@@ -24,14 +26,20 @@ size_t ProfilerBackend::error_count_ = 0;
 static bool profiler_initialized_ = false;
 static ros::Publisher profiler_index_pub_;
 static ros::Publisher profiler_data_pub_;
-static ros::WallTimer profiler_pub_timer_;
+static boost::thread profiler_thread_;
 
 static std::unordered_map<std::string, spm::ProfileData> abs_stats_;
 
-static void timerCallback(const ros::WallTimerEvent &ignored)
+static void profilerMain()
 {
-  (void)ignored;
-  ProfilerBackend::publish();
+  ROS_INFO("swri_profiler thread started.");
+
+  while (ros::ok()) {
+    ros::WallDuration(1.0).sleep();    
+    ProfilerBackend::publish();
+  }
+  
+  ROS_INFO("swri_profiler thread stopped.");
 }
 
 void ProfilerBackend::initializeProfiler()
@@ -41,12 +49,12 @@ void ProfilerBackend::initializeProfiler()
     return;
   }
   
-  ROS_INFO("Initializing global profiler...");
+  ROS_INFO("Initializing swri_profiler...");
   ros::NodeHandle nh;
   profiler_index_pub_ = nh.advertise<spm::ProfileIndexArray>("/profiler/index", 1, true);
   profiler_data_pub_ = nh.advertise<spm::ProfileDataArray>("/profiler/data", 100, false);
-  profiler_pub_timer_ = nh.createWallTimer(ros::WallDuration(1.0),
-                                           &timerCallback);
+  profiler_thread_ = boost::thread(profilerMain); 
+  
   profiler_initialized_ = true;
 }
 
