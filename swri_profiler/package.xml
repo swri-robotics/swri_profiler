@@ -1,0 +1,18 @@
+<package format="2">
+  <name>swri_profiler</name>
+  <version>0.0.1</version>
+  <description>
+    swri_profiler provides basic tools for real-time selective
+    profiling of ROS C++ nodes.
+  </description>
+
+  <maintainer email="elliot.johnson@swri.org">Elliot Johnson</maintainer>
+  <license>Copyright SwRI</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>swri_profiler_msgs</depend>
+
+  <export>
+  </export>
+</package>

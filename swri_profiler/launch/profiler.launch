@@ -1,0 +1,11 @@
+<launch>
+  <node pkg="rosbridge_server" type="rosbridge_websocket" name="rosbridge_websocket">
+    <param name="port" value="9091"/>
+  </node>
+  
+  <node pkg="swri_profiler" 
+        type="profiler_server" 
+        name="profiler_server" 
+        args="$(find swri_profiler)/html/">
+  </node>
+</launch>
