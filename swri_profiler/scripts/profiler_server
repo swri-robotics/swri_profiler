@@ -1,0 +1,23 @@
+#!/usr/bin/env python3.2
+import sys
+import os
+import http.server
+import socketserver
+
+if len(sys.argv) < 2:
+  exit(2)
+
+try:
+  os.chdir(sys.argv[1])
+  print("Changing directory to:", sys.argv[1])
+except:
+  print("Error changing directory to:", sys.argv[1])
+
+PORT = 8000
+
+Handler = http.server.SimpleHTTPRequestHandler
+
+httpd = socketserver.TCPServer(("", PORT), Handler)
+
+print("serving at port", PORT)
+httpd.serve_forever()

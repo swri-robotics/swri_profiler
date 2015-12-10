@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+
+    <!-- Disable Android Chrome magnifying glass effect when pressing near links. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no"/>
+    
+    <link rel="stylesheet" href="css/index.css" type="text/css"/>
+    <link rel="stylesheet" href="js/external/jquery-ui-1.11.4/jquery-ui.min.css" type="text/css"/>
+
+    <!-- JQuery and extensions -->
+    <script src="js/external/jquery-1.11.2/jquery.min.js" type="text/javascript"></script> 
+    <script src="js/external/jquery-ui-1.11.4/jquery-ui.min.js" type="text/javascript"></script>
+    <!-- roslibjs -->
+    <script src="js/external/roslibjs-0.15.0/eventemitter2.min.js" type="text/javascript"></script>
+    <script src="js/external/roslibjs-0.15.0/roslib.min.js" type="text/javascript"></script>
+
+    <!-- d3 -->
+    <script src="js/external/d3-3.5.10/d3.min.js" type="text/javascript"></script>
+  </head>
+
+  <body>
+    <div id="tooltip" class="hidden">
+    <p><span id="label">?</span></p>
+    <p>Calls: <span id="calls">?</span></p>
+    <table>
+      <tr>
+        <td>Total Duration</td>
+        <td><span id="inc_total_duration">?</span> (inc)</td>
+        <td><span id="exc_total_duration">?</span> (exc)</td>
+      </tr>
+      <tr>
+        <td>Average Duration</td>
+        <td><span id="inc_avg_duration">?</span> (inc)</td>
+        <td><span id="exc_avg_duration">?</span> (exc)</td>
+      </tr>
+      <tr>
+        <td>Instantaneous Duration</td>
+        <td><span id="inc_instant_duration">?</span> (inc)</td>
+        <td><span id="exc_instant_duration">?</span> (exc)</td>
+      </tr>
+    </table>
+    </div>
+
+    <div>
+      <div>
+        <svg id="partition_svg" width="400" height="400"/>
+        <svg id="stream_svg" width="1000" height="400"/>
+      </div>
+      <div class="row">
+        <div class="block">
+          Stream Offset Modes<br/>
+          <input type="radio" name="offset" id="silhouette" checked>silhouette</input><br/>
+          <input type="radio" name="offset" id="wiggle">wiggle</input><br/>
+          <input type="radio" name="offset" id="zero">zero</input>
+        </div>
+        <div class="block">
+          Stream Interpolation Modes<br/>
+          <input type="radio" name="interpolation" id="linear">linear</input><br/>
+          <input type="radio" name="interpolation" id="step">step</input><br/>
+          <input type="radio" name="interpolation" id="basis" checked>basis</input><br>
+          <input type="radio" name="interpolation" id="cardinal">cardinal</input><br/>
+          <input type="radio" name="interpolation" id="monotone">monotone</input><br/>
+          <!--
+              <input type="radio" name="interpolation" id="cardinal-open">cardinal-open</input><br/>
+              <input type="radio" name="interpolation" id="basis-open">basis-open</input><br/>
+              <input type="radio" name="interpolation" id="step-after">step-after</input><br/>
+              <input type="radio" name="interpolation" id="step-before">step-before</input><br/>
+              -->
+        </div>    
+
+        <div class="block">
+          <label for="depth_spinner">Depth:</label> <input id="depth_spinner" name="max_depth">
+        </div>
+
+    </div>
+
+
+    <script src="js/profiler.js" type="text/javascript"></script>
+  </body>
+</html>

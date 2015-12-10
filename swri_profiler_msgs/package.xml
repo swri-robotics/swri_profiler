@@ -1,0 +1,17 @@
+<package format="2">
+  <name>swri_profiler_msgs</name>
+  <version>0.0.1</version>
+  <description>
+    Messages for the swri_profiler tool.
+  </description>
+  <maintainer email="elliot.johnson@swri.org">Elliot Johnson</maintainer>
+  <license>Copyright SwRI</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>message_generation</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <exec_depend>message_runtime</exec_depend>
+
+  <export>
+  </export>
+</package>

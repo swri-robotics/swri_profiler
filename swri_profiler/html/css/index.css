@@ -1,0 +1,32 @@
+#tooltip {
+    position: absolute;
+    height: auto;
+    padding: 10px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+}
+
+#tooltip.hidden {
+    display: none;
+}
+
+#tooltip p {
+    margin: 0;
+    font-family: sans-serif;
+    font-size: 16px;
+    line-height: 20px;
+}
+
+.row { 
+    width: 100%;
+    text-align: center;
+    vertical-align: top;
+}
+
+.block {
+    display: inline-block;
+    text-align: left;
+    vertical-align: top;
+}
