@@ -196,9 +196,13 @@ class Profiler
 
 #define SWRI_PROFILER_IMP(block_var, name)             \
   swri_profiler::Profiler block_var(name);             \
-  
 
+#ifndef DISABLE_SWRI_PROFILER
 #define SWRI_PROFILE(name) SWRI_PROFILER_IMP(      \
     SWRI_PROFILER_CONCAT(prof_block_, __LINE__),   \
     name)
+#else // ndef DISABLE_SWRI_PROFILER
+#define SWRI_PROFILE(name)
+#endif // def DISABLE_SWRI_PROFILER
+
 #endif  // SWRI_PROFILER_PROFILER_H_
