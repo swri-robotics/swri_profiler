@@ -19,13 +19,13 @@ clone your repository, and build swri_profiler with catkin.
 Once built, you can test that everything was installed properly with
 the built in test nodes:
 
-#. Start a roscore
+1. Start a roscore
 
    You can skip this step, but it's convenient to have a separate
    roscore running so you can start and stop the other launch files
    easily.
 
-#. Launch swri_profiler / testing_example.launch
+2. Launch swri_profiler / testing_example.launch
   
    As soon as the nodes are running, the profiler will begin
    collecting profiling data and publishing it.  You can verify that
@@ -33,14 +33,14 @@ the built in test nodes:
    /profiler/index topics.
 
 
-#. Launch swri_profiler / profiler.launch
+3. Launch swri_profiler / profiler.launch
 
    The profile viewer is implemented as a webpage with javascript.
    This launch file starts up roslibjs rosbridge_server and runs a
    lightweight Python server to server the webpage.  (**Be aware that
    the Python server will serve pages to any clients.**)
 
-#. Point a web browser to http://localhost:8000/
+4. Point a web browser to http://localhost:8000/
 
    The viewer is useful but still in a very preliminary state.  If you
    see some colorful but boring plots this point, that means
@@ -52,11 +52,11 @@ Using the profiler
 
 Adding the profiler to a node is very straightforward:
 
-#. Add swri_profiler as a dependency to your package.  . Include
+1. Add swri_profiler as a dependency to your package. 
 
-#swri_profiler/swri_profiler.h in files that you want to profile.
+2. Include swri_profiler/swri_profiler.h in files that you want to profile.
 
-#. Call the macro SWRI_PROFILE("my-label") at the start of any scope
+3. Call the macro SWRI_PROFILE("my-label") at the start of any scope
    that you want to profile.
 
 SWRI_PROFILE creates a local variable with a unique name at the point
