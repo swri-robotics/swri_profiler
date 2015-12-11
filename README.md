@@ -54,7 +54,7 @@ Adding the profiler to a node is very straightforward:
 
 1. Add swri_profiler as a dependency to your package. 
 
-2. Include swri_profiler/swri_profiler.h in files that you want to profile.
+2. Include swri_profiler/profiler.h in files that you want to profile.
 
 3. Call the macro SWRI_PROFILE("my-label") at the start of any scope
    that you want to profile.

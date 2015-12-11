@@ -13,7 +13,10 @@ try:
 except:
   print("Error changing directory to:", sys.argv[1])
 
-PORT = 8000
+if len(sys.argv) > 2:
+    PORT = int(sys.argv[2])
+else:
+    PORT = 8000
 
 Handler = http.server.SimpleHTTPRequestHandler
 
