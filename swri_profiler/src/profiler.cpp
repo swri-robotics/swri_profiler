@@ -96,6 +96,7 @@ void Profiler::collectAndPublish()
   std::unordered_map<std::string, ClosedInfo> new_closed_blocks;
   std::unordered_map<std::string, OpenInfo> threaded_open_blocks;
   ros::WallTime now = ros::WallTime::now();
+  ros::Time ros_now = ros::Time::now();
   
   {
     SpinLockGuard guard(lock_);
@@ -185,6 +186,7 @@ void Profiler::collectAndPublish()
   spm::ProfileDataArray msg;
   msg.header.stamp = timeFromWall(now);
   msg.header.frame_id = ros::this_node::getName();
+  msg.rostime_stamp = ros_now;
   
   msg.data.resize(all_closed_blocks_.size());
   for (auto &pair : all_closed_blocks_) {
