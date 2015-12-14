@@ -1,0 +1,28 @@
+<RCC>
+  <qresource prefix="/">
+    <file>fonts/hack/Hack-Bold.ttf</file>
+    <file>fonts/hack/Hack-BoldOblique.ttf</file>
+    <file>fonts/hack/Hack-Regular.ttf</file>
+    <file>fonts/hack/Hack-RegularOblique.ttf</file>
+    <file>fonts/ubuntu/UbuntuMono-B.ttf</file>
+    <file>fonts/ubuntu/UbuntuMono-BI.ttf</file>
+    <file>fonts/ubuntu/UbuntuMono-R.ttf</file>
+    <file>fonts/ubuntu/UbuntuMono-RI.ttf</file>
+    <file>fonts/SourceCodePro/SourceCodePro-Black.otf</file>
+    <file>fonts/SourceCodePro/SourceCodePro-BlackIt.otf</file>
+    <file>fonts/SourceCodePro/SourceCodePro-Bold.otf</file>
+    <file>fonts/SourceCodePro/SourceCodePro-BoldIt.otf</file>
+    <file>fonts/SourceCodePro/SourceCodePro-ExtraLight.otf</file>
+    <file>fonts/SourceCodePro/SourceCodePro-ExtraLightIt.otf</file>
+    <file>fonts/SourceCodePro/SourceCodePro-It.otf</file>
+    <file>fonts/SourceCodePro/SourceCodePro-Light.otf</file>
+    <file>fonts/SourceCodePro/SourceCodePro-LightIt.otf</file>
+    <file>fonts/SourceCodePro/SourceCodePro-Medium.otf</file>
+    <file>fonts/SourceCodePro/SourceCodePro-MediumIt.otf</file>
+    <file>fonts/SourceCodePro/SourceCodePro-Semibold.otf</file>
+    <file>fonts/SourceCodePro/SourceCodePro-SemiboldIt.otf</file>
+    <file>fonts/Inconsolata/Inconsolata.otf</file>
+    <file>fonts/SourceCodePro/SourceCodePro-Regular.otf</file>
+    <file>images/icon.png</file>
+  </qresource>
+</RCC>
