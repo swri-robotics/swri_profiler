@@ -169,7 +169,7 @@ void Profiler::collectAndPublish()
 
   if (update_index) {
     spm::ProfileIndexArray index;
-    index.header.stamp = ros::Time::now();
+    index.header.stamp = timeFromWall(now);
     index.header.frame_id = ros::this_node::getName();
     index.data.resize(all_closed_blocks_.size());
     
