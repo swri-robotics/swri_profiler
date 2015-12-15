@@ -82,9 +82,11 @@ class ProfileBlock
 
 class ProfileTreeNode
 {
+ public:
+  QString name;
   QString path;
-  QString parent_path;
-  QStringList child_paths;
+  ProfileTreeNode* parent_node;
+  std::deque<ProfileTreeNode> child_nodes;
   
   friend class Profile;
 };
@@ -113,12 +115,14 @@ class Profile : public QObject
   void addBlock(const QString &path, const QString &name, int depth);
 
   size_t indexFromSec(const uint64_t secs) const { return secs - min_time_s_; }
+  size_t findLastValidIndex(const ProfileBlock& block, size_t index);
 
   void rebuildIndices();
   void rebuildFlatIndex();
   void rebuildTreeIndex();
   
   void updateDerivedData(size_t index);
+  void updateDerivedDataInternal(ProfileTreeNode *node, size_t index);
   
  public:
   Profile();

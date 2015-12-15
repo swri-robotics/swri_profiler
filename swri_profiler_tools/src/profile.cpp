@@ -28,7 +28,9 @@
 //
 // *****************************************************************************
 #include <swri_profiler_tools/profile.h>
+#include <algorithm>
 #include <QStringList>
+#include <QDebug>
 
 namespace swri_profiler_tools
 {
@@ -188,11 +190,112 @@ void Profile::rebuildFlatIndex()
   flat_index_ = index;
 }
 
+// Compares the first N items of two string lists.
+static bool compareInitialStringList(
+  const QStringList &list1,
+  const QStringList &list2)
+{
+  int size = std::min(list1.size(), list2.size());
+  
+  if (size == 0) {
+    return true;
+  }
+
+  // Comparing in reverse because, in our use case, the differences
+  // are more likely to be at the end of the lists.
+  for (int i = size; i > 0; i--) {
+    if (list1[i-1] != list2[i-1]) {
+      return false;
+    }
+  }
+  return true;    
+}
+
+// static void printTree(ProfileTreeNode *node, const QString &prefix)
+// {
+//   qWarning(qPrintable(prefix + node->name));
+//   for (size_t i = 0; i < node->child_nodes.size(); i++) {
+//     printTree(&(node->child_nodes[i]), prefix + "  ");
+//   }
+// }
+
 void Profile::rebuildTreeIndex()
-{  
+{
+  tree_root_.path = "";
+  tree_root_.parent_node = NULL;
+  tree_root_.child_nodes.clear();
+
+  ProfileTreeNode *current = &tree_root_;
+  QStringList stack;
+  stack.push_back("");
+
+  for (int i = 0; i < flat_index_.size(); i++) {
+    qDebug() << i << ": " << flat_index_[i];
+  }
+
+  // Start at 1 because the first key is the root node.
+  for (int i = 1; i < flat_index_.size(); i++) {    
+    QStringList parts = flat_index_[i].split('/');
+
+    while (stack.size() > 1 && !compareInitialStringList(stack, parts)) {
+      stack.pop_back();
+      current = current->parent_node;
+    }
+
+    while (stack.size() < parts.size()) {
+      QString name = parts[stack.size()];
+      stack.push_back(name);
+
+      QString path = stack.join("/") + "/" + name;
+      current->child_nodes.emplace_back();
+      ProfileTreeNode *new_node = &(current->child_nodes.back());
+      new_node->name = name;
+      new_node->path = path;
+      new_node->parent_node = current;
+      current = new_node;
+    }
+  }
+}
+
+size_t Profile::findLastValidIndex(const ProfileBlock& block, size_t index)
+{
+  while (index > 0 && !block.data[index].valid) { index--; }
+  return index;
 }
 
 void Profile::updateDerivedData(size_t index)
 {
+  updateDerivedDataInternal(&tree_root_, index);
+}
+
+void Profile::updateDerivedDataInternal(ProfileTreeNode *node, size_t index)
+{
+  uint64_t children_cum_call_count = 0;
+  uint64_t children_cum_incl_duration = 0;
+  uint64_t children_inc_incl_duration = 0;
+  uint64_t children_inc_max_duration = 0;
+
+  for (auto &child : node->child_nodes) {
+    updateDerivedDataInternal(&child, index);
+    ProfileBlock &block = blocks_[child.path];    
+    int valid_index = findLastValidIndex(block, index);
+    ProfileEntry &data = block.data[valid_index];
+    children_cum_call_count += data.cumulative_call_count;
+    children_cum_incl_duration += data.cumulative_inclusive_duration_ns;
+    children_inc_incl_duration += data.incremental_inclusive_duration_ns;
+    children_inc_max_duration = std::max(children_inc_max_duration, data.incremental_max_duration_ns);
+  }
+
+  auto& data = blocks_[node->path].data[index];
+  if (!data.measured) {
+    data.valid = true;
+    data.cumulative_call_count = children_cum_call_count;
+    data.cumulative_inclusive_duration_ns = children_cum_incl_duration;
+    data.incremental_inclusive_duration_ns = children_inc_incl_duration;
+    data.incremental_max_duration_ns = children_inc_max_duration;
+  }
+
+  data.cumulative_exclusive_duration_ns = data.cumulative_inclusive_duration_ns - children_cum_incl_duration;
+  data.incremental_exclusive_duration_ns = data.incremental_inclusive_duration_ns - children_inc_incl_duration;
 }
 }  // namespace swri_profiler_tools

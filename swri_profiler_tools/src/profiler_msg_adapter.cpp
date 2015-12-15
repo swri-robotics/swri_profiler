@@ -22,6 +22,10 @@ void ProfilerMsgAdapter::processIndex(const swri_profiler_msgs::ProfileIndexArra
   
   for (auto const &item : msg.data) {
     QString label = QString::fromStdString(item.label);
+    // Put the labels in a canonical form with a leading slash, no
+    // final slash, and no adjacent slashes.
+    QStringList parts = label.split("/", QString::SkipEmptyParts);
+    label = "/" + parts.join("/");
 
     // This is a special case to handle nodelets nicely, and it works
     // when users design their labels intelligently by wrapping each
@@ -36,10 +40,6 @@ void ProfilerMsgAdapter::processIndex(const swri_profiler_msgs::ProfileIndexArra
       label = node_name + "/" + label;
     }
 
-    // Put the labels in a canonical form with a leading slash, no
-    // final slash, and no adjacent slashes.
-    QStringList parts = label.split("/", QString::SkipEmptyParts);
-    label = "/" + parts.join("/");
     
     index_[node_name][item.key] = label;
   }
