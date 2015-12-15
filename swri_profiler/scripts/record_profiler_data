@@ -1,0 +1,69 @@
+#!/usr/bin/env python
+"""
+Record the swri_profiler data to a bag file.
+"""
+
+import sys
+import subprocess
+
+import rospy
+import std_msgs
+import std_msgs.msg
+import swri_profiler_msgs as spm
+import swri_profiler_msgs.msg
+
+def get_ros_version_info():
+    PACKAGE_NAME = 'swri_profiler'
+    try:
+        find_profiler_command = ['rospack', 'find', PACKAGE_NAME]
+        profiler_path = subprocess.check_output(find_profiler_command).strip()
+    except subprocess.CalledProcessError, e:
+        rospy.logerr('Failed to find ROS package %s: %r' % (PACKAGE_NAME, e))
+        return ''
+
+    try: 
+        wstool_command = ['wstool', 'info']
+        wstool_info = subprocess.check_output(wstool_command, cwd=profiler_path).strip()
+    except subprocess.CalledProcessError, e:
+        rospy.logerr('Failed to run wstool info: %r' % (e,))
+        return ''
+
+    return wstool_info
+
+
+version_info = get_ros_version_info()
+if version_info:
+    # If we can get some idea of the version of our system, we want to
+    # include this in the bag file to make it easier to investigate
+    # changes in performance over time.  We do this by publishing the
+    # version to a profiler topic as a latched string.
+
+    # Just to be extra careful about timing, we wait for a single
+    # profile data message before publishing the version.  This
+    # ensures that our version information will show up right near the
+    # start of the profiling data.  Probably unnecessary, but it
+    # doesn't add much complexity.
+    
+    rospy.init_node('record_profiler_data', anonymous=True)
+    pub = rospy.Publisher('/profiler/version_info', std_msgs.msg.String, latch=True)
+
+    def data_callback(msg):
+        global sub        
+        msg = std_msgs.msg.String()
+        msg.data = version_info
+        pub.publish(msg)
+        sub.unregister()
+        sub = None       
+
+    sub = rospy.Subscriber('/profiler/data', spm.msg.ProfileDataArray, data_callback)
+
+
+rosbag_cmd = ['rosbag', 'record',
+               '-o', 'swri_profiler_data',
+               '/profiler/version_info',
+               '/profiler/index',
+               '/profiler/data']
+
+rospy.loginfo('Starting rosbag to record profiler data.')
+subprocess.call(rosbag_cmd)
+
