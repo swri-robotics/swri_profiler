@@ -31,10 +31,13 @@
 #ifndef SWRI_PROFILER_TOOLS_PROFILE_H_
 #define SWRI_PROFILER_TOOLS_PROFILE_H_
 
-#include <vector>
+#include <deque>
 #include <map>
 
+#include <QObject>
 #include <QString>
+#include <QStringList>
+#include <swri_profiler_tools/new_profile_data.h>
 
 namespace swri_profiler_tools
 {
@@ -43,26 +46,92 @@ class ProfileDatabase;
 class ProfileEntry
 {
   bool valid;
-  uint64_t total_call_count;
-  uint64_t inclusive_cumulative_duration_ns;
-  uint64_t inclusive_incremental_duration_ns;
-  uint64_t exclusive_cumulative_duration_ns;
-  uint64_t exclusive_incremental_duration_ns;  
+  bool measured;
+  uint64_t cumulative_call_count;
+  uint64_t cumulative_inclusive_duration_ns;
+  uint64_t incremental_inclusive_duration_ns;
+  uint64_t cumulative_exclusive_duration_ns;
+  uint64_t incremental_exclusive_duration_ns;
+  uint64_t incremental_max_duration_ns;
+
+  friend class Profile;
+
+ public:
+  ProfileEntry()
+    :
+    valid(false),
+    measured(false),
+    cumulative_call_count(0),
+    cumulative_inclusive_duration_ns(0),
+    incremental_inclusive_duration_ns(0),
+    cumulative_exclusive_duration_ns(0),
+    incremental_exclusive_duration_ns(0),
+    incremental_max_duration_ns(0)
+  {}
 };  // class ProfileEntry
 
 class ProfileBlock
 {
-  bool measured;
-  std::vector<ProfileEntry> data;
-  friend class ProfileDatabase;
+  QString name;
+  QString path;
+  int depth;
+  std::deque<ProfileEntry> data;
+  
+  friend class Profile;
 };  // class ProfileBlock
 
-class Profile
+class ProfileTreeNode
 {
-  QString name;
-  std::vector<int> timeline_s;
-  std::map<QString, ProfileBlock> blocks;  
+  QString path;
+  QString parent_path;
+  QStringList child_paths;
+  
+  friend class Profile;
+};
+
+class Profile : public QObject
+{
+  Q_OBJECT;
+
+  int db_handle_;
+  QString name_;
+  uint64_t min_time_s_;
+  uint64_t max_time_s_;
+  std::map<QString, ProfileBlock> blocks_;
+  QStringList flat_index_;
+  ProfileTreeNode tree_root_;
+
+  // The ProfileDatabase is the only place we want to create valid
+  // profiles.
   friend class ProfileDatabase;
+  void initialize(int db_handle, const QString &name);
+
+  void expandTimeline(const uint64_t sec);
+  void addDataToAllBlocks(const bool back, const size_t count);
+
+  bool touchBlock(const QString &path);
+  void addBlock(const QString &path, const QString &name, int depth);
+
+  size_t indexFromSec(const uint64_t secs) const { return secs - min_time_s_; }
+
+  void rebuildIndices();
+  void rebuildFlatIndex();
+  void rebuildTreeIndex();
+  
+  void updateDerivedData(size_t index);
+  
+ public:
+  Profile();
+  ~Profile();
+
+  void addData(const NewProfileDataVector &data);
+  const bool isValid() const { return db_handle_ >= 0; }
+  const int dbHandle() const { return db_handle_; }
+  const QString& name() const { return name_; }
+
+ Q_SIGNALS:
+  void blocksAdded(int handle);
+  void dataAdded(int handle);  
 };  // class Profile
 }  // namespace swri_profiler_tools
 #endif  // SWRI_PROFILER_TOOLS_PROFILE_H_

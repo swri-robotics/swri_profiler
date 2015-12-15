@@ -43,21 +43,28 @@ class ProfileDatabase : public QObject
 {
   Q_OBJECT;
 
-  int next_handle_;
-  std::unordered_map<int, Profile> profiles_;
+  Profile invalid_profile_;
+  
+  // We have to store these as pointers if we want to use an unordered
+  // map because the map relies on operations that Qt doesn't permit
+  // on QObject descendents.
+  std::unordered_map<int, Profile*> profiles_;
 
  public:
   ProfileDatabase();
   ~ProfileDatabase();
 
   int createHandle(const QString &name);
-  int addData(int handle, const NewProfileDataVector &data);
+
+  std::vector<int> allHandles() const;
+
+  Profile& getProfile(int handle);
+  const Profile& getProfile(int handle) const;
   
  Q_SIGNALS:
   void profileAdded(int handle);
-  void nodesAdded(int handle);
+  void blocksAdded(int handle);
   void dataAdded(int handle);
-
 };  // class ProfileDatabase
 }  // namespace swri_profiler_tools
 #endif  // SWRI_PROFILER_TOOLS_PROFILE_DATABASE_H_

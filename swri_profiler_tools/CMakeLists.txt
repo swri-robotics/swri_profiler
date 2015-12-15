@@ -45,6 +45,7 @@ set(MOC_HEADER_FILES
   include/swri_profiler_tools/ros_source.h
   include/swri_profiler_tools/ros_source_backend.h
   include/swri_profiler_tools/profile_database.h
+  include/swri_profiler_tools/profile.h
   )
 set(SRC_FILES
   src/main.cpp
@@ -54,6 +55,7 @@ set(SRC_FILES
   src/ros_source.cpp
   src/ros_source_backend.cpp
   src/profile_database.cpp
+  src/profile.cpp
   src/profiler_msg_adapter.cpp
   )
 qt4_add_resources(RCC_SRCS resources/images.qrc)

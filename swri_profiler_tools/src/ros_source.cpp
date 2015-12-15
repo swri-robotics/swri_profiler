@@ -103,16 +103,20 @@ void RosSource::handleData(swri_profiler_msgs::ProfileDataArray msg)
     return;
   }
 
-  int active_handle = db_handle_;
-  if (active_handle < 0) {
-    active_handle = db_->createHandle("ROS Capture");
-  }
+  // todo(elliotjo): If we detect a large gap, we should create a new
+  // profile for the data to handle the use case of leaving the
+  // profiler open throughout a development session.
 
-  active_handle = db_->addData(active_handle, new_data);
-
-  if (active_handle != db_handle_) {
-    db_handle_ = active_handle;
+  if (db_handle_ < 0) {
+    db_handle_ = db_->createHandle("ROS Capture");
+    if (db_handle_ < 0) {
+      qWarning("Failed to get a new database handle. Dropping data.");
+      return;
+    }
+    
     Q_EMIT activeHandleChanged(db_handle_);
   }
+  
+  db_->getProfile(db_handle_).addData(new_data);
 }
 }  // namespace swri_profiler_tools

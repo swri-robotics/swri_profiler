@@ -43,7 +43,8 @@ namespace swri_profiler_tools
 struct NewProfileData
 {
   QString label;
-  uint64_t timestamp_sec;
+  uint64_t wall_stamp_sec;
+  uint64_t ros_stamp_ns;
   uint64_t cumulative_call_count;
   uint64_t cumulative_inclusive_duration_ns;
   uint64_t incremental_inclusive_duration_ns;
@@ -53,4 +54,3 @@ struct NewProfileData
 typedef std::vector<NewProfileData> NewProfileDataVector;
 }  // namespace swri_profiler_tools
 #endif  // SWRI_PROFILER_TOOLS_NEW_PROFILE_DATA_H_
-

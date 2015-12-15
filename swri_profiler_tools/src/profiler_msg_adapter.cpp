@@ -1,4 +1,5 @@
 #include <swri_profiler_tools/profiler_msg_adapter.h>
+#include <QStringList>
 
 namespace swri_profiler_tools
 {
@@ -20,7 +21,27 @@ void ProfilerMsgAdapter::processIndex(const swri_profiler_msgs::ProfileIndexArra
   index_[node_name].clear();
   
   for (auto const &item : msg.data) {
-    index_[node_name][item.key] = QString::fromStdString(item.label);
+    QString label = QString::fromStdString(item.label);
+
+    // This is a special case to handle nodelets nicely, and it works
+    // when users design their labels intelligently by wrapping each
+    // ROS callback with a SWRI_PROFILE(getName()).  If the
+    // nodelet is run as part of a nodelet manager, the node name and
+    // nodelet name will differ and we want to append the node name to
+    // allow us to guage the relative runtimes of all the instrumented
+    // nodelets in that manager.  If the nodelet is run standalone,
+    // then the nodelet name and node name will be the same and we
+    // don't need to duplicate it.
+    if (!label.startsWith(node_name)) {
+      label = node_name + "/" + label;
+    }
+
+    // Put the labels in a canonical form with a leading slash, no
+    // final slash, and no adjacent slashes.
+    QStringList parts = label.split("/", QString::SkipEmptyParts);
+    label = "/" + parts.join("/");
+    
+    index_[node_name][item.key] = label;
   }
 }
 
@@ -47,24 +68,10 @@ bool ProfilerMsgAdapter::processData(
       return false;
     }
 
-    QString label = index_[node_name][item.key];
-
-    // This is a special case to handle nodelets nicely, and it works
-    // when users design their labels intelligently by wrapping each
-    // ROS callback with a SWRI_PROFILE(getName()).  If the
-    // nodelet is run as part of a nodelet manager, the node name and
-    // nodelet name will differ and we want to append the node name to
-    // allow us to guage the relative runtimes of all the instrumented
-    // nodelets in that manager.  If the nodelet is run standalone,
-    // then the nodelet name and node name will be the same and we
-    // don't need to duplicate it.
-    if (!label.startsWith(node_name)) {
-      label = node_name + "/" + label;
-    }
-    
     out.emplace_back();
-    out.back().label = label;
-    out.back().timestamp_sec = timestamp_sec;
+    out.back().label = index_[node_name][item.key];
+    out.back().wall_stamp_sec = timestamp_sec;
+    out.back().ros_stamp_ns = msg.rostime_stamp.toNSec();
     out.back().cumulative_call_count = item.abs_call_count;
     out.back().cumulative_inclusive_duration_ns = item.abs_total_duration.toNSec();
     out.back().incremental_inclusive_duration_ns = item.rel_total_duration.toNSec();

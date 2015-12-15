@@ -9,26 +9,61 @@ ProfileDatabase::ProfileDatabase()
 
 ProfileDatabase::~ProfileDatabase()
 {
+  for (auto &item : profiles_) {
+    delete item.second;
+  }
 }
 
 int ProfileDatabase::createHandle(const QString &name)
 {
-  int handle = next_handle_++;
+  if (name.isEmpty()) {
+    qWarning("Refusing to create a nameless profile.");
+    return -1;
+  }
 
-  profiles_[handle].name = name;
+  // Find an available handle
+  int handle = profiles_.size();
+  while (profiles_.count(handle) != 0) { handle++; }
+
+  // We are creating a new handle
+  profiles_[handle] = new Profile();
+  Profile &profile = *(profiles_.at(handle));
+  profile.initialize(handle, name);
+
+  // todo(elliotjo): connect profile signals here.
+    
   Q_EMIT profileAdded(handle);
   return handle;
 }
 
-int ProfileDatabase::addData(int handle, const std::vector<NewProfileData> &data)
+Profile& ProfileDatabase::getProfile(int handle)
 {
   if (profiles_.count(handle) == 0) {
     qWarning("Invalid profile handle: %d", handle);
-    return -1;
+    return invalid_profile_;
   }
 
-  Profile& profile = profiles_[handle];
+  return *(profiles_.at(handle));
+}
 
-  return handle;
+const Profile& ProfileDatabase::getProfile(int handle) const
+{
+  if (profiles_.count(handle) == 0) {
+    qWarning("Invalid profile handle: %d", handle);
+    return invalid_profile_;
+  }
+
+  return *(profiles_.at(handle));
+}
+
+std::vector<int> ProfileDatabase::allHandles() const
+{
+  std::vector<int> handles;
+  handles.reserve(profiles_.size());
+  
+  for (auto const &it : profiles_) {
+    handles.push_back(it.first);
+  }
+  return handles;
 }
 }  // namespace swri_profiler_tools
