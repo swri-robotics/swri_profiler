@@ -30,7 +30,13 @@ int ProfileDatabase::createHandle(const QString &name)
   Profile &profile = *(profiles_.at(handle));
   profile.initialize(handle, name);
 
-  // todo(elliotjo): connect profile signals here.
+  // We rebroadcast the individual profile signals in bulk so that
+  // other objects can just connect to us and not deal with
+  // adding/removing connections as profiles are added or deleted.
+  QObject::connect(&profile, SIGNAL(blocksAdded(int)),
+                   this, SIGNAL(blocksAdded(int)));
+  QObject::connect(&profile, SIGNAL(dataAdded(int)),
+                   this, SIGNAL(dataAdded(int)));
     
   Q_EMIT profileAdded(handle);
   return handle;
