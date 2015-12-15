@@ -29,6 +29,7 @@
 // *****************************************************************************
 #include <swri_profiler_tools/profile.h>
 #include <algorithm>
+#include <set>
 #include <QStringList>
 #include <QDebug>
 
@@ -69,7 +70,7 @@ void Profile::addData(const NewProfileDataVector &data)
     return;
   }
 
-  uint64_t earliest_sec = data.front().wall_stamp_sec;
+  std::set<uint64_t> modified_times;
   
   bool blocks_added = false;
   for (auto const &item : data) {
@@ -85,7 +86,7 @@ void Profile::addData(const NewProfileDataVector &data)
     block.data[index].incremental_inclusive_duration_ns = item.incremental_inclusive_duration_ns;
     block.data[index].incremental_max_duration_ns = item.incremental_max_duration_ns;
 
-    earliest_sec = std::min(earliest_sec, item.wall_stamp_sec);
+    modified_times.insert(item.wall_stamp_sec);
   }  
 
   if (blocks_added) {
@@ -93,7 +94,9 @@ void Profile::addData(const NewProfileDataVector &data)
     Q_EMIT blocksAdded(db_handle_);
   }
 
-  updateDerivedData(indexFromSec(earliest_sec));
+  for (auto const &t : modified_times) {
+    updateDerivedData(indexFromSec(t));
+  }
   Q_EMIT dataAdded(db_handle_);
 }
 
