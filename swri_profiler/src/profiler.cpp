@@ -78,7 +78,6 @@ void Profiler::initializeTLS()
 void Profiler::profilerMain()
 {
   ROS_DEBUG("swri_profiler thread started.");
-
   while (ros::ok()) {
     // Align updates to approximately every second.
     ros::WallTime now = ros::WallTime::now();
@@ -92,12 +91,14 @@ void Profiler::profilerMain()
 
 void Profiler::collectAndPublish()
 {
+  static bool first_run = true;
+  static ros::WallTime last_now = ros::WallTime::now();
+  
   // Grab a snapshot of the current state.  
   std::unordered_map<std::string, ClosedInfo> new_closed_blocks;
   std::unordered_map<std::string, OpenInfo> threaded_open_blocks;
   ros::WallTime now = ros::WallTime::now();
-  ros::Time ros_now = ros::Time::now();
-  
+  ros::Time ros_now = ros::Time::now();  
   {
     SpinLockGuard guard(lock_);
     new_closed_blocks.swap(closed_blocks_);
@@ -164,7 +165,12 @@ void Profiler::collectAndPublish()
 
     new_info.abs_call_count++;
     new_info.abs_total_duration += duration;
-    new_info.rel_total_duration += std::min(ros::Duration(1.0), duration);
+    if (first_run) {
+      new_info.rel_total_duration += duration;
+    } else {
+      new_info.rel_total_duration += std::min(
+        durationFromWall(now - last_now), duration);
+    }
     new_info.rel_max_duration = std::max(new_info.rel_max_duration, duration);
   }
 
@@ -212,5 +218,7 @@ void Profiler::collectAndPublish()
   }
   
   profiler_data_pub_.publish(msg);
+  first_run = false;
+  last_now = now;
 }
 }  // namespace swri_profiler

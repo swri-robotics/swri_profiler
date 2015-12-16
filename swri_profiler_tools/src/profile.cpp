@@ -407,8 +407,45 @@ void Profile::updateDerivedDataInternal(ProfileNode &node, size_t index)
     data.incremental_max_duration_ns = children_inc_max_duration;
   }
 
-  data.cumulative_exclusive_duration_ns = data.cumulative_inclusive_duration_ns - children_cum_incl_duration;
-  data.incremental_exclusive_duration_ns = data.incremental_inclusive_duration_ns - children_inc_incl_duration;
+  if (children_cum_incl_duration > data.cumulative_inclusive_duration_ns) {
+    // This case has not been observed yet.
+    qWarning("Node's (%s) cumulative inclusive duration is less than it's combined"
+             " children (%zu < %zu). I have not seen this before, so it may or may"
+             " not be a big issue.",
+             qPrintable(node.name()),
+             data.cumulative_inclusive_duration_ns,
+             children_cum_incl_duration);
+    data.cumulative_inclusive_duration_ns = children_cum_incl_duration;
+    data.cumulative_exclusive_duration_ns = 0;
+  } else {
+    data.cumulative_exclusive_duration_ns = data.cumulative_inclusive_duration_ns - children_cum_incl_duration;
+  }
+
+  if (children_inc_incl_duration > data.incremental_inclusive_duration_ns) {
+    // This case was happening very frequently for long running nodes
+    // with fast running small parts.  The profiler was limiting the
+    // duration to 1 second while the smaller parts add up to just
+    // slightly more than a second.  The profiler was updated to help
+    // compensate by using the real publishing interval instead of the
+    // expected interval.
+
+    // If it still happens, we want to adjust the data to be
+    // internally consistent.  First, we allow a threshold to permit
+    // small errors without a warning.  We're using a tenth of a
+    // millisecond here
+    if (children_inc_incl_duration - data.incremental_inclusive_duration_ns > 100000) {
+      qWarning("Node's (%s) incremental inclusive timing is less than it's combined "
+               "children (%zu < %zu).  If this happens frequently, something is wrong.",
+               qPrintable(node.name()),
+               data.incremental_inclusive_duration_ns,
+               children_inc_incl_duration);
+    }
+
+    data.incremental_inclusive_duration_ns = children_inc_incl_duration;
+    data.incremental_exclusive_duration_ns = 0;
+  } else {    
+    data.incremental_exclusive_duration_ns = data.incremental_inclusive_duration_ns - children_inc_incl_duration;
+  }
 }
 
 void Profile::setName(const QString &name)

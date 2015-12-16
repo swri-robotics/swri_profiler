@@ -137,7 +137,8 @@ class Profiler
 
       auto const open_it = open_blocks_.find(open_index);
       if (open_it == open_blocks_.end()) {
-        ROS_ERROR("Missing entry for '%s' in open_index. Profiler is probably corrupted.");
+        ROS_ERROR("Missing entry for '%s' in open_index. Profiler is probably corrupted.",
+                  name.c_str());
         return;
       }
       
