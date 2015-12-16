@@ -384,7 +384,7 @@ void Profile::updateDerivedDataInternal(ProfileNode &node, size_t index)
   uint64_t children_inc_incl_duration = 0;
   uint64_t children_inc_max_duration = 0;
 
-  for (auto &child_key : node.childrenKeys()) {
+  for (auto &child_key : node.childKeys()) {
     if (nodes_.count(child_key) == 0) {
       qWarning("Invalid child key in updateDerivedDataInternal");
       continue;

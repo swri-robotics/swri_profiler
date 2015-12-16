@@ -87,7 +87,7 @@ int main(int argc, char **argv)
   QCoreApplication::setOrganizationName("Southwest Research Institute");
   QCoreApplication::setOrganizationDomain("swri.org");
   QCoreApplication::setApplicationName("SwRI Profiler");
-  
+
   swri_profiler_tools::ProfilerMaster master;
   master.createNewWindow();
   app.connect(&app, SIGNAL(lastWindowClosed()), &app, SLOT(quit()));

@@ -31,31 +31,42 @@
 #ifndef SWRI_PROFILER_TOOLS_PROFILE_TREE_WIDGET_H_
 #define SWRI_PROFILER_TOOLS_PROFILE_TREE_WIDGET_H_
 
-#include <QTreeWidget>
+#include <QWidget>
+
+QT_BEGIN_NAMESPACE
+class QPoint;
+class QTreeWidget;
+class QTreeWidgetItem;
+QT_END_NAMESPACE
+
 namespace swri_profiler_tools
 {
 class ProfileDatabase;
 class Profile;
 
-// Not a big fan of subclassing for this task, but it works for now.
-class ProfileTreeWidget : public QTreeWidget
+class ProfileTreeWidget : public QWidget
 {
   Q_OBJECT;
 
   ProfileDatabase *db_;
+  QTreeWidget *tree_widget_;
   
  public:
   ProfileTreeWidget(QWidget *parent=0);
   virtual ~ProfileTreeWidget();
 
   void setDatabase(ProfileDatabase *db);
-
+                                       
  private Q_SLOTS:
   void handleProfileAdded(int profile_key);
   void handleNodesAdded(int profile_key);
 
+  void handleTreeContextMenuRequest(const QPoint &pos);
+
+
  private:
   void synchronizeWidget();
+  void addProfile(int profile_key);
   void addNode(QTreeWidgetItem *parent, const Profile &profile, const int node_key);
 };  // class ProfileTreeWidget
 }  // namespace swri_profiler_tools

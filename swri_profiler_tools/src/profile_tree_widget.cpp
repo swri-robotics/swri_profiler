@@ -28,16 +28,43 @@
 //
 // *****************************************************************************
 #include <swri_profiler_tools/profile_tree_widget.h>
+
+#include <QVBoxLayout>
+#include <QTreeWidget>
+#include <QMenu>
+
 #include <swri_profiler_tools/profile_database.h>
 #include <swri_profiler_tools/profile.h>
 
 namespace swri_profiler_tools
 {
+enum ProfileTreeTypes {
+  ProfileType = QTreeWidgetItem::UserType,
+  NodeType
+};
+
+enum ProfileTreeRoles {
+  ProfileKeyRole = Qt::UserRole,
+  NodeKeyRole,
+};
+
 ProfileTreeWidget::ProfileTreeWidget(QWidget *parent)
   :
-  QTreeWidget(parent),
+  QWidget(parent),
   db_(NULL)
 {
+  tree_widget_ = new QTreeWidget(this);
+  tree_widget_->setFont(QFont("Ubuntu Mono", 9));
+  tree_widget_->setContextMenuPolicy(Qt::CustomContextMenu);
+  
+  QObject::connect(tree_widget_, SIGNAL(customContextMenuRequested(const QPoint&)),
+                   this, SLOT(handleTreeContextMenuRequest(const QPoint&)));
+  
+  auto *main_layout = new QVBoxLayout();  
+
+  main_layout->addWidget(tree_widget_);
+  main_layout->setContentsMargins(0,0,0,0);
+  setLayout(main_layout);
 }
 
 ProfileTreeWidget::~ProfileTreeWidget()
@@ -80,22 +107,34 @@ void ProfileTreeWidget::handleNodesAdded(int profile_key)
 void ProfileTreeWidget::synchronizeWidget()
 {
   qWarning("synced!");
-  clear();
+  tree_widget_->clear();
 
   if (!db_) {
     return;
   }
-
+  
   std::vector<int> keys = db_->profileKeys();
   for (auto key : keys) {
-    const Profile &profile = db_->profile(key);
-    QTreeWidgetItem *profile_item = new QTreeWidgetItem(
-      QStringList(profile.name()));
-    addTopLevelItem(profile_item);
-    for (auto key : profile.rootNode().childrenKeys()) {
-      addNode(profile_item, profile, key);
-    }
-  }  
+    addProfile(key);
+  }
+}
+
+void ProfileTreeWidget::addProfile(int profile_key)
+{
+  const Profile &profile = db_->profile(profile_key);
+  if (!profile.isValid()) {
+    qWarning("Invald profile for key %d.", profile_key);
+    return;
+  }
+  
+  QTreeWidgetItem *item = new QTreeWidgetItem(ProfileType);
+  item->setText(0, profile.name());
+  item->setData(0, ProfileKeyRole, profile_key);
+  tree_widget_->addTopLevelItem(item);
+
+  for (auto child_key : profile.rootNode().childKeys()) {
+    addNode(item, profile, child_key);
+  }
 }
 
 void ProfileTreeWidget::addNode(QTreeWidgetItem *parent,
@@ -104,15 +143,48 @@ void ProfileTreeWidget::addNode(QTreeWidgetItem *parent,
 {
   const ProfileNode &node = profile.node(node_key);
   if (!node.isValid()) {
+    qWarning("Invalid node for key %d", node_key);
     return;
   }
   
-  QTreeWidgetItem *item = new QTreeWidgetItem(
-    QStringList(node.name()));
+  QTreeWidgetItem *item = new QTreeWidgetItem(NodeType);
+  item->setText(0, node.name());
+  item->setData(0, ProfileKeyRole, profile.profileKey());
+  item->setData(0, NodeKeyRole, node.nodeKey());
   parent->addChild(item);
+
+  for (auto child_key : node.childKeys()) {
+    addNode(item, profile, child_key);
+  }
+}
+
+void ProfileTreeWidget::handleTreeContextMenuRequest(const QPoint &pos)
+{
+  QTreeWidgetItem *item = tree_widget_->itemAt(pos);
+
+  auto menu = new QMenu(this);
+  auto expand_all_action = menu->addAction("Expand All");
+  QObject::connect(expand_all_action, SIGNAL(triggered()),
+                   tree_widget_, SLOT(expandAll()));
   
-  for (auto key : node.childrenKeys()) {
-    addNode(item, profile, key);
+  auto collapse_all_action = menu->addAction("Collapse All");
+  QObject::connect(collapse_all_action, SIGNAL(triggered()),
+                   tree_widget_, SLOT(collapseAll()));
+
+  menu->popup(tree_widget_->mapToGlobal(pos));  
+  QObject::connect(menu, SIGNAL(aboutToHide()), menu, SLOT(deleteLater()));
+
+  if (!item) {
+    qWarning("No item under mouse");
+  } else if (item->type() == ProfileType) {
+    int profile_key = item->data(0, ProfileKeyRole).toInt();
+    qWarning("profile %d", profile_key);
+  } else if (item->type() == NodeType) {
+    int profile_key = item->data(0, ProfileKeyRole).toInt();
+    int node_key = item->data(0, NodeKeyRole).toInt();
+    qWarning("node %d/%d", profile_key, node_key);    
+  } else {
+    qWarning("Unknown item type: %d", item->type());
   }    
 }
 }  // namespace swri_profiler_tools

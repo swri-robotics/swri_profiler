@@ -23,13 +23,7 @@
       <widget class="QWidget" name="layoutWidget">
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
-         <widget class="swri_profiler_tools::ProfileTreeWidget" name="profileTree">
-          <column>
-           <property name="text">
-            <string notr="true">1</string>
-           </property>
-          </column>
-         </widget>
+         <widget class="swri_profiler_tools::ProfileTreeWidget" name="profileTree" native="true"/>
         </item>
         <item>
          <widget class="QGraphicsView" name="staticView"/>
@@ -50,7 +44,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>27</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -84,8 +78,9 @@
  <customwidgets>
   <customwidget>
    <class>swri_profiler_tools::ProfileTreeWidget</class>
-   <extends>QTreeWidget</extends>
+   <extends>QWidget</extends>
    <header location="global">swri_profiler_tools/profile_tree_widget.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

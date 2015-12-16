@@ -134,7 +134,7 @@ class ProfileNode
   const std::deque<ProfileEntry>& data() { return data_; }
   int depth() const { return depth_; }
   int parentKey() const { return parent_; }
-  const std::vector<int>& childrenKeys() const { return children_; }    
+  const std::vector<int>& childKeys() const { return children_; }    
 };  // class ProfileNode
 
 class Profile : public QObject
