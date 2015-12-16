@@ -23,10 +23,24 @@
       <widget class="QWidget" name="layoutWidget">
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
-         <widget class="swri_profiler_tools::ProfileTreeWidget" name="profileTree" native="true"/>
+         <widget class="swri_profiler_tools::ProfileTreeWidget" name="profileTree" native="true">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
         </item>
         <item>
-         <widget class="QGraphicsView" name="staticView"/>
+         <widget class="QWidget" name="partitionWidget" native="true">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
         </item>
         <item>
          <widget class="QTextBrowser" name="infoView"/>

@@ -212,6 +212,7 @@ class Profile : public QObject
 
   const ProfileNode& node(int node_key) const;
   const ProfileNode& rootNode() const;
+  const int rootKey() const { return 0; }
   const std::vector<int>& nodeKeys() const;
   
  Q_SIGNALS:

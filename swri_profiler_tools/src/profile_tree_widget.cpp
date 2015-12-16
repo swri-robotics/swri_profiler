@@ -56,9 +56,13 @@ ProfileTreeWidget::ProfileTreeWidget(QWidget *parent)
   tree_widget_ = new QTreeWidget(this);
   tree_widget_->setFont(QFont("Ubuntu Mono", 9));
   tree_widget_->setContextMenuPolicy(Qt::CustomContextMenu);
+  tree_widget_->setExpandsOnDoubleClick(false);
   
   QObject::connect(tree_widget_, SIGNAL(customContextMenuRequested(const QPoint&)),
                    this, SLOT(handleTreeContextMenuRequest(const QPoint&)));
+
+  QObject::connect(tree_widget_, SIGNAL(itemActivated(QTreeWidgetItem*, int)),
+                   this, SLOT(handleItemActivated(QTreeWidgetItem*, int)));
   
   auto *main_layout = new QVBoxLayout();  
 
@@ -106,8 +110,8 @@ void ProfileTreeWidget::handleNodesAdded(int profile_key)
 
 void ProfileTreeWidget::synchronizeWidget()
 {
-  qWarning("synced!");
   tree_widget_->clear();
+  items_.clear();
 
   if (!db_) {
     return;
@@ -128,12 +132,24 @@ void ProfileTreeWidget::addProfile(int profile_key)
   }
   
   QTreeWidgetItem *item = new QTreeWidgetItem(ProfileType);
-  item->setText(0, profile.name());
+
+  item->setText(0, profile.name());    
   item->setData(0, ProfileKeyRole, profile_key);
+  item->setData(0, NodeKeyRole, -1);
   tree_widget_->addTopLevelItem(item);
+  items_[DatabaseKey(profile.profileKey())] = item;
 
   for (auto child_key : profile.rootNode().childKeys()) {
     addNode(item, profile, child_key);
+  }
+  
+  if (active_key_.isValid()) {
+    if (items_.count(active_key_)) {
+      markItemActive(active_key_);
+    } else {
+      active_key_ = DatabaseKey();
+      emit activeNodeChanged(-1,-1);
+    }
   }
 }
 
@@ -152,6 +168,7 @@ void ProfileTreeWidget::addNode(QTreeWidgetItem *parent,
   item->setData(0, ProfileKeyRole, profile.profileKey());
   item->setData(0, NodeKeyRole, node.nodeKey());
   parent->addChild(item);
+  items_[DatabaseKey(profile.profileKey(), node.nodeKey())] = item;
 
   for (auto child_key : node.childKeys()) {
     addNode(item, profile, child_key);
@@ -186,5 +203,48 @@ void ProfileTreeWidget::handleTreeContextMenuRequest(const QPoint &pos)
   } else {
     qWarning("Unknown item type: %d", item->type());
   }    
+}
+
+void ProfileTreeWidget::handleItemActivated(QTreeWidgetItem *item, int column)
+{
+  DatabaseKey new_key(item->data(0, ProfileKeyRole).toInt(),
+                      item->data(0, NodeKeyRole).toInt());
+
+  if (active_key_ != new_key) {
+    markItemInactive(active_key_);
+    active_key_ = new_key;
+    markItemActive(active_key_);    
+    emit activeNodeChanged(active_key_.profileKey(),
+                           active_key_.isProfile() ? 0 : active_key_.nodeKey());
+  }
+}
+
+QString ProfileTreeWidget::nameForKey(const DatabaseKey &key) const
+{
+  if (key.isProfile()) {
+    return db_->profile(key.profileKey()).name();
+  } else if (key.isNode()) {
+    return db_->profile(key.profileKey()).node(key.nodeKey()).name();
+  } else {
+    return "<INVALID KEY>";
+  }
+}
+
+void ProfileTreeWidget::markItemActive(const DatabaseKey &key)
+{
+  if (items_.count(key) == 0) {
+    return;
+  }
+
+  items_.at(key)->setText(0, "[" + nameForKey(key) + "]");
+}
+
+void ProfileTreeWidget::markItemInactive(const DatabaseKey &key)
+{ 
+  if (items_.count(key) == 0) {
+    return;
+  }
+
+  items_.at(key)->setText(0, nameForKey(key));
 }
 }  // namespace swri_profiler_tools

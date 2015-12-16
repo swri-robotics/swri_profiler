@@ -28,62 +28,64 @@
 //
 // *****************************************************************************
 
-#ifndef SWRI_PROFILER_TOOLS_PROFILE_TREE_WIDGET_H_
-#define SWRI_PROFILER_TOOLS_PROFILE_TREE_WIDGET_H_
-
-#include <unordered_map>
-
-#include <QWidget>
-#include <swri_profiler_tools/database_key.h>
-
-QT_BEGIN_NAMESPACE
-class QPoint;
-class QTreeWidget;
-class QTreeWidgetItem;
-QT_END_NAMESPACE
+#ifndef SWRI_PROFILER_TOOLS_DATABASE_KEY_H_
+#define SWRI_PROFILER_TOOLS_DATABASE_KEY_H_
 
 namespace swri_profiler_tools
 {
-class ProfileDatabase;
-class Profile;
-
-class ProfileTreeWidget : public QWidget
+struct DatabaseKey
 {
-  Q_OBJECT;
-
-  ProfileDatabase *db_;
-  QTreeWidget *tree_widget_;
-
-  DatabaseKey active_key_;
-  std::unordered_map<DatabaseKey, QTreeWidgetItem*> items_;
-  
- public:
-  ProfileTreeWidget(QWidget *parent=0);
-  virtual ~ProfileTreeWidget();
-
-  void setDatabase(ProfileDatabase *db);
-
- Q_SIGNALS:
-  void activeNodeChanged(int profile_key, int node_key);
-                                       
- private Q_SLOTS:
-  void handleProfileAdded(int profile_key);
-  void handleNodesAdded(int profile_key);
-
-  void handleItemActivated(QTreeWidgetItem *item, int column);
-  void handleTreeContextMenuRequest(const QPoint &pos);
-
-
  private:
-  void synchronizeWidget();
-  void addProfile(int profile_key);
-  void addNode(QTreeWidgetItem *parent, const Profile &profile, const int node_key);
+  int profile_key_;
+  int node_key_;
 
-  QString nameForKey(const DatabaseKey &key) const;
-  void markItemActive(const DatabaseKey &key);
-  void markItemInactive(const DatabaseKey &key);  
-};  // class ProfileTreeWidget
+ public:
+  DatabaseKey() : profile_key_(-1), node_key_(-1) {}
+  DatabaseKey(int profile_key, int node_key=-1)
+    : profile_key_(profile_key), node_key_(node_key) {}
+
+  bool isValid() const { return profile_key_ < 0; }
+  bool isProfile() const { return profile_key_ >= 0 && node_key_ < 0; }
+  bool isNode() const { return profile_key_ >= 0 && node_key_ >= 0; }
+
+  int profileKey() const { return profile_key_; }
+  int nodeKey() const { return node_key_; }
+  
+
+  bool operator==(const DatabaseKey &other) const
+  {
+    return (profile_key_ == other.profile_key_ &&
+            node_key_ == other.node_key_);
+  }
+
+  bool operator!=(const DatabaseKey &other) const
+  {
+    return !(*this == other);
+  }
+
+  bool operator<(const DatabaseKey &other) const
+  {
+    if (profile_key_ == other.profile_key_) {
+      return node_key_ < other.node_key_;
+    } else {
+      return profile_key_ < other.profile_key_;
+    }
+  }
+};
 }  // namespace swri_profiler_tools
-#endif  // SWRI_PROFILER_TOOLS_PROFILE_TREE_WIDGET_H_
 
+// Define a hash function on a DatabaseKey to support
+// std::unordered_map and std::unordered_set.
+namespace std {
+template <>
+struct hash<swri_profiler_tools::DatabaseKey> {
+  size_t operator () (const swri_profiler_tools::DatabaseKey &key) const
+  {
+    // This should be fine hash function because it's very unlikely
+    // someone would be working with hundreds of profiles at once.
+    return key.profileKey()*1000 + key.nodeKey();
+  }
+};
+}  // namespace std
+#endif // SWRI_PROFILER_TOOLS_DATABASE_KEY_H_
 
