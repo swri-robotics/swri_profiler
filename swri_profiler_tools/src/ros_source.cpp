@@ -106,8 +106,11 @@ void RosSource::handleData(swri_profiler_msgs::ProfileDataArray msg)
 
   // todo(elliotjo): If we detect a large gap, we should create a new
   // profile for the data to handle the use case of leaving the
-  // profiler open throughout a development session.
-
+  // profiler open throughout a development session.  We should also
+  // consider the case where data is coming from a computer with a bad
+  // clock.  We'll either allocate a huge timespan or constantly
+  // generate new profiles.  Either are really bad.
+  
   if (db_handle_ < 0) {
     db_handle_ = db_->createHandle("ROS Capture");
     if (db_handle_ < 0) {

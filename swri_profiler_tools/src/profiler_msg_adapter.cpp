@@ -1,5 +1,5 @@
 #include <swri_profiler_tools/profiler_msg_adapter.h>
-#include <QStringList>
+#include <swri_profiler_tools/util.h>
 
 namespace swri_profiler_tools
 {
@@ -13,19 +13,16 @@ ProfilerMsgAdapter::~ProfilerMsgAdapter()
 
 void ProfilerMsgAdapter::processIndex(const swri_profiler_msgs::ProfileIndexArray &msg)
 {
-  const QString node_name(QString::fromStdString(msg.header.frame_id));
+  const QString ros_node_name =
+    normalizeNodePath(QString::fromStdString(msg.header.frame_id));
 
   // An index message contains the entire index table for the message,
   // so we wipe out any existing index to make sure we are completely
   // in sync.
-  index_[node_name].clear();
+  index_[ros_node_name].clear();
   
   for (auto const &item : msg.data) {
-    QString label = QString::fromStdString(item.label);
-    // Put the labels in a canonical form with a leading slash, no
-    // final slash, and no adjacent slashes.
-    QStringList parts = label.split("/", QString::SkipEmptyParts);
-    label = "/" + parts.join("/");
+    QString label = normalizeNodePath(QString::fromStdString(item.label));
 
     // This is a special case to handle nodelets nicely, and it works
     // when users design their labels intelligently by wrapping each
@@ -36,12 +33,12 @@ void ProfilerMsgAdapter::processIndex(const swri_profiler_msgs::ProfileIndexArra
     // nodelets in that manager.  If the nodelet is run standalone,
     // then the nodelet name and node name will be the same and we
     // don't need to duplicate it.
-    if (!label.startsWith(node_name)) {
-      label = node_name + "/" + label;
+    if (!label.startsWith(ros_node_name)) {
+      label = ros_node_name + label;
     }
 
     
-    index_[node_name][item.key] = label;
+    index_[ros_node_name][item.key] = label;
   }
 }
 

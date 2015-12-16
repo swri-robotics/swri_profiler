@@ -28,6 +28,7 @@
 //
 // *****************************************************************************
 #include <swri_profiler_tools/profile.h>
+#include <swri_profiler_tools/util.h>
 #include <algorithm>
 #include <set>
 #include <QStringList>
@@ -41,6 +42,15 @@ Profile::Profile()
   min_time_s_(0),
   max_time_s_(0)
 {
+  // Add the root node.
+  node_key_from_path_[""] = 0;
+  ProfileNode &root_node = nodes_[0];
+  root_node.node_key_ = 0;
+  root_node.name_ = "";
+  root_node.path_ = "";
+  root_node.measured_ = false;
+  root_node.depth_ = 0;
+  root_node.parent_ = -1;
 }
 
 Profile::~Profile()
@@ -72,31 +82,48 @@ void Profile::addData(const NewProfileDataVector &data)
 
   std::set<uint64_t> modified_times;
   
-  bool blocks_added = false;
+  bool nodes_added = false;
   for (auto const &item : data) {
-    expandTimeline(item.wall_stamp_sec);
-    blocks_added |= touchBlock(item.label);
+    QString path = normalizeNodePath(item.label);  
 
-    size_t index = indexFromSec(item.wall_stamp_sec);
-    ProfileBlock &block = blocks_[item.label];
-    block.data[index].valid = true;
-    block.data[index].measured = true;
-    block.data[index].cumulative_call_count = item.cumulative_call_count;
-    block.data[index].cumulative_inclusive_duration_ns = item.cumulative_inclusive_duration_ns;
-    block.data[index].incremental_inclusive_duration_ns = item.incremental_inclusive_duration_ns;
-    block.data[index].incremental_max_duration_ns = item.incremental_max_duration_ns;
-
+    // Since we're setting the data at this item's timestamp, we
+    // always add the timestamp to the modified list.
     modified_times.insert(item.wall_stamp_sec);
+    
+    // If this item is outside our current timeline, we need to expand
+    // the timeline (and fill in the gaps).  This could influence a larger 
+    expandTimeline(item.wall_stamp_sec);
+
+    // Touching the node guarantees that it and all of its ancestor
+    // nodes exist.
+    nodes_added |= touchNode(path);
+
+    if (node_key_from_path_.count(path) == 0) {
+      qWarning("Failed to touch node for %s. Data will be dropped. This should never happend.",
+               qPrintable(path));
+      continue;
+    }
+    int node_key = node_key_from_path_.at(path);
+
+    // At this point, we know that the corresponding node and timeslot
+    // exist, so we can store the data.  Storing data may influence
+    // subsequent times.
+    storeItemData(modified_times, node_key, item);    
   }  
 
-  if (blocks_added) {
+  // If nodes were created, we need to update our indices.
+  if (nodes_added) {
     rebuildIndices();
-    Q_EMIT blocksAdded(db_handle_);
+    Q_EMIT nodesAdded(db_handle_);
   }
 
+  // Finally, we need to update derived data that may have changed
+  // from the update.
   for (auto const &t : modified_times) {
     updateDerivedData(indexFromSec(t));
   }
+
+  // Notify observers that the profile has new data.
   Q_EMIT dataAdded(db_handle_);
 }
 
@@ -108,73 +135,140 @@ void Profile::expandTimeline(const uint64_t sec)
     // The timeline is empty
     min_time_s_ = sec;
     max_time_s_ = sec+1;
-    addDataToAllBlocks(true, 1);
+    addDataToAllNodes(true, 1);
   } else if (sec >= max_time_s_) {
     // New data extends the back of the timeline.
     size_t new_elements = sec - max_time_s_ + 1;
     max_time_s_ = sec+1;
-    addDataToAllBlocks(true, new_elements);
+    addDataToAllNodes(true, new_elements);
   } else {
-    // New data must be at the front of the timeline.
+    // New data must be at the front of the timeline.  This case
+    // should be rare.
     size_t new_elements = min_time_s_ - sec;
     min_time_s_ = sec;
-    addDataToAllBlocks(false, new_elements);
+    addDataToAllNodes(false, new_elements);
   }    
 }
 
-void Profile::addDataToAllBlocks(const bool back, const size_t count)
+void Profile::addDataToAllNodes(const bool back, const size_t count)
 {
   if (back) {
-    for (auto &it : blocks_) {
-      std::deque<ProfileEntry> &data = it.second.data;
-      data.insert(data.end(), count, ProfileEntry());
+    for (auto &it : nodes_) {
+      std::deque<ProfileEntry> &data = it.second.data_;
+      ProfileEntry initial_value;
+      if (!data.empty()) {
+        initial_value = data.back();
+      }          
+      initial_value.projected = true;
+      data.insert(data.end(), count, initial_value);
     }
   } else {
-    for (auto &it : blocks_) {
-      std::deque<ProfileEntry> &data = it.second.data;
-      data.insert(data.begin(), count, ProfileEntry());
+    ProfileEntry initial_value;
+    initial_value.projected = true;
+    for (auto &it : nodes_) {
+      std::deque<ProfileEntry> &data = it.second.data_;
+      data.insert(data.begin(), count, initial_value);
     }
   }
 }
 
-bool Profile::touchBlock(const QString &path)
+bool Profile::touchNode(const QString &path)
 {
-  if (blocks_.count(path)) {
+  // If the node already exists, it's ancestors must already exist
+  // too.  We can just lookup the key and return false because no
+  // nodes are being added.
+  if (node_key_from_path_.count(path)) {
     return false;
   }
 
   QStringList all_parts = path.split('/');
   if (all_parts.isEmpty()) {
-    qWarning("Path block does not have a root component? '%s'", qPrintable(path));
+    qWarning("Node path (%s) does not have a root component.  This should never happen.",
+             qPrintable(path));
+    // This should seriously never happen because even the empty
+    // string will come back as a single item list.
     return false;
   }
 
-  int depth = 0;
-  QString this_path = all_parts.takeFirst();
-  if (!blocks_.count(this_path)) {
-    addBlock(this_path, this_path, depth);
+  if (all_parts.front() != "") {
+    qWarning("Split of node path '%s' did not yield root as first element. This should never happend.",
+             qPrintable(path));
+  } else {
+    all_parts.removeFirst();
   }
 
+  QString this_path = "";
+  int this_depth = 0;  
+  int parent_key = 0;
+  
   while (!all_parts.isEmpty()) {
-    QString this_name = all_parts.takeFirst();
-    depth++;
-    
+    QString this_name = all_parts.takeFirst();    
     this_path = this_path + "/" + this_name;
-    if (!blocks_.count(this_path)) {
-      addBlock(this_path, this_name, depth);
+    this_depth += 1;
+
+    if (node_key_from_path_.count(this_path)) {
+      parent_key = node_key_from_path_.at(this_path);
+      continue;
     }
+
+    // Otherwise we need to create a new node.    
+    int this_key = nodes_.size();
+    while (nodes_.count(this_key)) { this_key++; }
+
+    node_key_from_path_[this_path] = this_key;
+    ProfileNode &this_node = nodes_[this_key];
+
+    this_node.node_key_ = this_key;
+    this_node.name_ = this_name;
+    this_node.path_ = this_path;
+    this_node.measured_ = false;
+
+    ProfileEntry initial_value;
+    initial_value.projected = true;
+    this_node.data_.resize(max_time_s_ - min_time_s_, initial_value);
+
+    this_node.depth_ = this_depth;
+    this_node.parent_ = parent_key;
+    parent_key = this_key;
+
+    // children_ will be set by rebuildChildren.
+    // 
+    // Note: Why not just modify the index as we add nodes?  Mainly
+    // for simplicity.  Doing everything at once makes it a little
+    // easier to guarantee proper ordering and consistency without
+    // having to do a lot of searching/sorting.  Adding nodes should
+    // be a very infrequent operation, so the added cost of redoing
+    // the work isn't an issue.
   }
 
   return true;
 }
 
-void Profile::addBlock(const QString &path, const QString &name, int depth)
+void Profile::storeItemData(std::set<uint64_t> &modified_times,
+                            const int node_key,
+                            const NewProfileData &item)
 {
-  ProfileBlock &block = blocks_[path];
-  block.name = name;
-  block.path = path;
-  block.depth = depth;
-  block.data.resize(max_time_s_ - min_time_s_);
+  size_t index = indexFromSec(item.wall_stamp_sec);
+  ProfileNode &node = nodes_.at(node_key);
+
+  node.measured_ = true;
+  node.data_[index].projected = false;
+  node.data_[index].cumulative_call_count = item.cumulative_call_count;
+  node.data_[index].cumulative_inclusive_duration_ns = item.cumulative_inclusive_duration_ns;
+  node.data_[index].incremental_inclusive_duration_ns = item.incremental_inclusive_duration_ns;
+  node.data_[index].incremental_max_duration_ns = item.incremental_max_duration_ns;
+  // Exclusive timing fields are derived data and are set in updateDerivedData().
+
+  // If the subsequent elements are projected data, we should
+  // propogate this new data forward until the next firm data point.
+  for (size_t i = index+1; i < node.data_.size(); i++) {
+    if (node.data_[i].projected == false) {
+      break;
+    }
+    node.data_[i] = node.data_[index];
+    node.data_[i].projected = true;
+    modified_times.insert(secFromIndex(i));
+  }
 }
 
 void Profile::rebuildIndices()
@@ -185,12 +279,21 @@ void Profile::rebuildIndices()
 
 void Profile::rebuildFlatIndex()
 {
-  QStringList index;
-  for (auto const &it : blocks_) {
-    index.append(it.first);
+  QStringList paths;
+  for (auto const &it : nodes_) {
+    paths.append(it.second.path());
   }
-  index.sort();
-  flat_index_ = index;
+  paths.sort();
+
+  flat_index_.clear();
+  flat_index_.reserve(paths.size());
+  for (int i = 0; i < paths.size(); i++) {
+    if (node_key_from_path_.count(paths[i]) == 0) {
+      qWarning("Path is missing from node_key_from_path_.  This should never happen.");
+      continue;
+    }
+    flat_index_.push_back(node_key_from_path_.at(paths[i]));
+  }
 }
 
 // Compares the first N items of two string lists.
@@ -222,76 +325,79 @@ static bool compareInitialStringList(
 //   }
 // }
 
+// Basic integrity check that we should add somewhere
+    // ProfileNode &node = nodes_.at(key);
+    // if (node.node_key_ != key) {
+    //   qWarning("Profile at nodes_[%d] has mismatched key (%d).  This should never happen.", key, node.node_key_);
+    //   continue;
+    // }
+
 void Profile::rebuildTreeIndex()
 {
-  tree_root_.path = "";
-  tree_root_.parent_node = NULL;
-  tree_root_.child_nodes.clear();
-
-  ProfileTreeNode *current = &tree_root_;
-  QStringList stack;
-  stack.push_back("");
-
-  for (int i = 0; i < flat_index_.size(); i++) {
-    qDebug() << i << ": " << flat_index_[i];
+  // Start by clearing out all children
+  for (auto &it : nodes_) {
+    it.second.children_.clear();
   }
 
-  // Start at 1 because the first key is the root node.
-  for (int i = 1; i < flat_index_.size(); i++) {    
-    QStringList parts = flat_index_[i].split('/');
-
-    while (stack.size() > 1 && !compareInitialStringList(stack, parts)) {
-      stack.pop_back();
-      current = current->parent_node;
+  for (int key : flat_index_) {
+    if (nodes_.count(key) == 0) {
+      qWarning("Key (%d) in flat index was not found in nodes_ map. This should never happen.", key);
+      continue;
+    }
+    
+    const ProfileNode &node = nodes_.at(key);
+    if (node.parent_ < 0) {
+      if (key != 0) {
+        qWarning("Profile node %d does not have a valid parent. This should never happen.", key);
+      }
+      continue;
     }
 
-    while (stack.size() < parts.size()) {
-      QString name = parts[stack.size()];
-      stack.push_back(name);
-
-      QString path = stack.join("/") + "/" + name;
-      current->child_nodes.emplace_back();
-      ProfileTreeNode *new_node = &(current->child_nodes.back());
-      new_node->name = name;
-      new_node->path = path;
-      new_node->parent_node = current;
-      current = new_node;
+    if (nodes_.count(node.parent()) == 0) {
+      qWarning("Profile node %d's parent (%d) was not found in nodes_. This should never happen.",
+               key, node.parent());
+      continue;
     }
+
+    ProfileNode &parent = nodes_.at(node.parent());
+    parent.children_.push_back(key);
   }
-}
-
-size_t Profile::findLastValidIndex(const ProfileBlock& block, size_t index)
-{
-  while (index > 0 && !block.data[index].valid) { index--; }
-  return index;
 }
 
 void Profile::updateDerivedData(size_t index)
 {
-  updateDerivedDataInternal(&tree_root_, index);
+  if (nodes_.count(0) == 0) {
+    qWarning("Profile is missing root node.");
+    return;
+  }
+  
+  updateDerivedDataInternal(nodes_.at(0), index);
 }
 
-void Profile::updateDerivedDataInternal(ProfileTreeNode *node, size_t index)
+void Profile::updateDerivedDataInternal(ProfileNode &node, size_t index)
 {
   uint64_t children_cum_call_count = 0;
   uint64_t children_cum_incl_duration = 0;
   uint64_t children_inc_incl_duration = 0;
   uint64_t children_inc_max_duration = 0;
 
-  for (auto &child : node->child_nodes) {
-    updateDerivedDataInternal(&child, index);
-    ProfileBlock &block = blocks_[child.path];    
-    int valid_index = findLastValidIndex(block, index);
-    ProfileEntry &data = block.data[valid_index];
+  for (auto &child_key : node.children()) {
+    if (nodes_.count(child_key) == 0) {
+      qWarning("Invalid child key in updateDerivedDataInternal");
+      continue;
+    }
+    ProfileNode &child = nodes_.at(child_key);
+    
+    updateDerivedDataInternal(child, index);
+    const ProfileEntry &data = child.data_[index];
     children_cum_call_count += data.cumulative_call_count;
     children_cum_incl_duration += data.cumulative_inclusive_duration_ns;
     children_inc_incl_duration += data.incremental_inclusive_duration_ns;
     children_inc_max_duration = std::max(children_inc_max_duration, data.incremental_max_duration_ns);
   }
 
-  auto& data = blocks_[node->path].data[index];
-  if (!data.measured) {
-    data.valid = true;
+  ProfileEntry &data = node.data_[index];
+  if (!node.measured_) {
     data.cumulative_call_count = children_cum_call_count;
     data.cumulative_inclusive_duration_ns = children_cum_incl_duration;
     data.incremental_inclusive_duration_ns = children_inc_incl_duration;

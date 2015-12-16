@@ -62,6 +62,7 @@ set(SRC_FILES
   src/profile.cpp
   src/profiler_msg_adapter.cpp
   src/profile_tree_widget.cpp
+  src/util.cpp
   )
 qt4_add_resources(RCC_SRCS resources/images.qrc)
 
