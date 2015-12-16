@@ -28,45 +28,35 @@
 //
 // *****************************************************************************
 
-#include <swri_profiler_tools/profiler_master.h>
-#include <swri_profiler_tools/profiler_window.h>
+#ifndef SWRI_PROFILER_TOOLS_PROFILE_TREE_WIDGET_H_
+#define SWRI_PROFILER_TOOLS_PROFILE_TREE_WIDGET_H_
 
-#include <QFontDialog>
-
+#include <QTreeWidget>
 namespace swri_profiler_tools
 {
-ProfilerMaster::ProfilerMaster()
-  :
-  ros_source_(&db_)
+class ProfileDatabase;
+
+// Not a big fan of subclassing for this task, but it works for now.
+class ProfileTreeWidget : public QTreeWidget
 {
-  QObject::connect(&ros_source_, SIGNAL(connected(bool, QString)),
-                   this, SLOT(rosConnected(bool, QString)));
-  ros_source_.start();
-}
+  Q_OBJECT;
 
-ProfilerMaster::~ProfilerMaster()
-{
-}
-
-void ProfilerMaster::createNewWindow()
-{
-  ProfilerWindow* win = new ProfilerWindow(&db_);
-
-  QObject::connect(win, SIGNAL(createNewWindow()),
-                   this, SLOT(createNewWindow()));
-  QObject::connect(&ros_source_, SIGNAL(connected(bool, QString)),
-                   win, SLOT(rosConnected(bool, QString)));
-
-  // We only see signals on change, so we need to manually initialize
-  // the window properly if we're already connected.
-  if (ros_source_.isConnected()) {
-    win->rosConnected(true, ros_source_.masterUri());
-  }
+  ProfileDatabase *db_;
   
-  win->show();
-}
+ public:
+  ProfileTreeWidget(QWidget *parent=0);
+  virtual ~ProfileTreeWidget();
 
-void ProfilerMaster::rosConnected(bool connected, QString master_uri)
-{
-}
+  void setDatabase(ProfileDatabase *db);
+
+ private Q_SLOTS:
+  void handleProfileAdded(int handle);
+  void handleBlocksAdded(int handle);
+
+ private:
+  void synchronizeWidget();  
+};  // class ProfileTreeWidget
 }  // namespace swri_profiler_tools
+#endif  // SWRI_PROFILER_TOOLS_PROFILE_TREE_WIDGET_H_
+
+

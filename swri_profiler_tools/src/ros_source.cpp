@@ -88,6 +88,7 @@ void RosSource::handleConnected(bool is_connected, QString uri)
   if (!connected_) {
     msg_adapter_.reset();
     db_handle_ = -1;
+    Q_EMIT activeHandleChanged(db_handle_);
   }
 }
 
@@ -113,7 +114,7 @@ void RosSource::handleData(swri_profiler_msgs::ProfileDataArray msg)
       qWarning("Failed to get a new database handle. Dropping data.");
       return;
     }
-    
+
     Q_EMIT activeHandleChanged(db_handle_);
   }
   

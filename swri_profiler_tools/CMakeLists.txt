@@ -36,9 +36,11 @@ catkin_package(
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(src)
+
 set(UI_FILES
   ui/profiler_window.ui
   )
+
 set(MOC_HEADER_FILES
   include/swri_profiler_tools/profiler_window.h
   include/swri_profiler_tools/profiler_master.h
@@ -46,7 +48,9 @@ set(MOC_HEADER_FILES
   include/swri_profiler_tools/ros_source_backend.h
   include/swri_profiler_tools/profile_database.h
   include/swri_profiler_tools/profile.h
+  include/swri_profiler_tools/profile_tree_widget.h
   )
+
 set(SRC_FILES
   src/main.cpp
   src/register_meta_types.cpp
@@ -57,6 +61,7 @@ set(SRC_FILES
   src/profile_database.cpp
   src/profile.cpp
   src/profiler_msg_adapter.cpp
+  src/profile_tree_widget.cpp
   )
 qt4_add_resources(RCC_SRCS resources/images.qrc)
 

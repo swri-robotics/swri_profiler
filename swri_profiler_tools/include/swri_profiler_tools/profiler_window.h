@@ -37,14 +37,16 @@
 
 namespace swri_profiler_tools
 {
+class ProfileDatabase;
 class ProfilerWindow : public QMainWindow
 {
   Q_OBJECT;
 
   QLabel *connection_status_;
+  ProfileDatabase *db_;
   
  public:
-  ProfilerWindow();
+  ProfilerWindow(ProfileDatabase *db);
   ~ProfilerWindow();
 
   void closeEvent(QCloseEvent *event);
@@ -57,7 +59,6 @@ class ProfilerWindow : public QMainWindow
   
  private:
   Ui::ProfilerWindow ui;
-
 };  // class ProfilerWindow  
 }  // namespace swri_profiler_tools
 #endif  // SWRI_PROFILER_TOOLS_PROFILER_WINDOW_H_

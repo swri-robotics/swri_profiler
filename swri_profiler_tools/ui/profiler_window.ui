@@ -23,7 +23,7 @@
       <widget class="QWidget" name="layoutWidget">
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
-         <widget class="QTreeWidget" name="treeWidget">
+         <widget class="swri_profiler_tools::ProfileTreeWidget" name="profileTree">
           <column>
            <property name="text">
             <string notr="true">1</string>
@@ -81,6 +81,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>swri_profiler_tools::ProfileTreeWidget</class>
+   <extends>QTreeWidget</extends>
+   <header location="global">swri_profiler_tools/profile_tree_widget.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>

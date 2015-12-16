@@ -32,9 +32,10 @@
 
 namespace swri_profiler_tools
 {
-ProfilerWindow::ProfilerWindow()
+ProfilerWindow::ProfilerWindow(ProfileDatabase *db)
   :
-  QMainWindow()
+  QMainWindow(),
+  db_(db)
 {
   ui.setupUi(this);
 
@@ -43,6 +44,8 @@ ProfilerWindow::ProfilerWindow()
 
   connection_status_ = new QLabel("Not connected");
   statusBar()->addPermanentWidget(connection_status_);
+
+  ui.profileTree->setDatabase(db_);
 }
 
 ProfilerWindow::~ProfilerWindow()

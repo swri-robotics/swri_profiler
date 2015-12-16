@@ -132,7 +132,7 @@ class Profile : public QObject
   const bool isValid() const { return db_handle_ >= 0; }
   const int dbHandle() const { return db_handle_; }
   const QString& name() const { return name_; }
-
+  
  Q_SIGNALS:
   void blocksAdded(int handle);
   void dataAdded(int handle);  

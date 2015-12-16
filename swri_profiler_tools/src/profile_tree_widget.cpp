@@ -27,46 +27,68 @@
 // DAMAGE.
 //
 // *****************************************************************************
-
-#include <swri_profiler_tools/profiler_master.h>
-#include <swri_profiler_tools/profiler_window.h>
-
-#include <QFontDialog>
+#include <swri_profiler_tools/profile_tree_widget.h>
+#include <swri_profiler_tools/profile_database.h>
 
 namespace swri_profiler_tools
 {
-ProfilerMaster::ProfilerMaster()
+ProfileTreeWidget::ProfileTreeWidget(QWidget *parent)
   :
-  ros_source_(&db_)
-{
-  QObject::connect(&ros_source_, SIGNAL(connected(bool, QString)),
-                   this, SLOT(rosConnected(bool, QString)));
-  ros_source_.start();
-}
-
-ProfilerMaster::~ProfilerMaster()
+  QTreeWidget(parent),
+  db_(NULL)
 {
 }
 
-void ProfilerMaster::createNewWindow()
+ProfileTreeWidget::~ProfileTreeWidget()
 {
-  ProfilerWindow* win = new ProfilerWindow(&db_);
+}
 
-  QObject::connect(win, SIGNAL(createNewWindow()),
-                   this, SLOT(createNewWindow()));
-  QObject::connect(&ros_source_, SIGNAL(connected(bool, QString)),
-                   win, SLOT(rosConnected(bool, QString)));
-
-  // We only see signals on change, so we need to manually initialize
-  // the window properly if we're already connected.
-  if (ros_source_.isConnected()) {
-    win->rosConnected(true, ros_source_.masterUri());
+void ProfileTreeWidget::setDatabase(ProfileDatabase *db)
+{
+  if (db_) {
+    // note(exjohnson): we can implement this later if desired, but
+    // currently no use case for it.
+    qWarning("ProfileTreeWidget: Cannot change the profile database.");
+    return;
   }
+
+  db_ = db;
   
-  win->show();
+  synchronizeWidget();
+  
+  QObject::connect(db_, SIGNAL(profileAdded(int)),
+                   this, SLOT(handleProfileAdded(int)));
+  QObject::connect(db_, SIGNAL(blocksAdded(int)),
+                   this, SLOT(handleBlocksAdded(int)));
 }
 
-void ProfilerMaster::rosConnected(bool connected, QString master_uri)
+void ProfileTreeWidget::handleProfileAdded(int handle)
 {
+  // We can optimize these to be specific later if necessary.
+  synchronizeWidget();
+}
+
+void ProfileTreeWidget::handleBlocksAdded(int handle)
+{
+  // We can optimize these to be specific later if necessary.
+  synchronizeWidget();
+}
+
+void ProfileTreeWidget::synchronizeWidget()
+{
+  qWarning("synced!");
+  clear();
+
+  if (!db_) {
+    return;
+  }
+
+  std::vector<int> handles = db_->allHandles();
+  for (auto handle : handles) {
+    const Profile &profile = db_->getProfile(handle);
+    QTreeWidgetItem *profile_item = new QTreeWidgetItem(
+      QStringList(profile.name()));
+    addTopLevelItem(profile_item);
+  }  
 }
 }  // namespace swri_profiler_tools
