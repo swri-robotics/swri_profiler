@@ -63,7 +63,6 @@ class RosSource : public QObject
   
  Q_SIGNALS:
   void connected(bool connected, QString uri);
-  void activeHandleChanged(int handle);                                             
 
  private Q_SLOTS:
   void handleConnected(bool connected, QString uri);
@@ -77,7 +76,7 @@ class RosSource : public QObject
   RosSourceBackend *backend_;
 
   ProfilerMsgAdapter msg_adapter_;
-  int db_handle_;
+  int profile_key_;
   
   bool connected_;
   QString master_uri_;

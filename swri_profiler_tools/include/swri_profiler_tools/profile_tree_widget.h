@@ -50,8 +50,8 @@ class ProfileTreeWidget : public QTreeWidget
   void setDatabase(ProfileDatabase *db);
 
  private Q_SLOTS:
-  void handleProfileAdded(int handle);
-  void handleBlocksAdded(int handle);
+  void handleProfileAdded(int profile_key);
+  void handleBlocksAdded(int profile_key);
 
  private:
   void synchronizeWidget();  

@@ -14,21 +14,16 @@ ProfileDatabase::~ProfileDatabase()
   }
 }
 
-int ProfileDatabase::createHandle(const QString &name)
+int ProfileDatabase::createProfile(const QString &name)
 {
-  if (name.isEmpty()) {
-    qWarning("Refusing to create a nameless profile.");
-    return -1;
-  }
+  // Find an available key
+  int key = profiles_.size();
+  while (profiles_.count(key) != 0) { key++; }
 
-  // Find an available handle
-  int handle = profiles_.size();
-  while (profiles_.count(handle) != 0) { handle++; }
-
-  // We are creating a new handle
-  profiles_[handle] = new Profile();
-  Profile &profile = *(profiles_.at(handle));
-  profile.initialize(handle, name);
+  // We are creating a new key
+  profiles_[key] = new Profile();
+  Profile &profile = *(profiles_.at(key));
+  profile.initialize(key, name);
 
   // We rebroadcast the individual profile signals in bulk so that
   // other objects can just connect to us and not deal with
@@ -38,38 +33,38 @@ int ProfileDatabase::createHandle(const QString &name)
   QObject::connect(&profile, SIGNAL(dataAdded(int)),
                    this, SIGNAL(dataAdded(int)));
     
-  Q_EMIT profileAdded(handle);
-  return handle;
+  Q_EMIT profileAdded(key);
+  return key;
 }
 
-Profile& ProfileDatabase::getProfile(int handle)
+Profile& ProfileDatabase::profile(int key)
 {
-  if (profiles_.count(handle) == 0) {
-    qWarning("Invalid profile handle: %d", handle);
+  if (profiles_.count(key) == 0) {
+    qWarning("Invalid profile key: %d", key);
     return invalid_profile_;
   }
 
-  return *(profiles_.at(handle));
+  return *(profiles_.at(key));
 }
 
-const Profile& ProfileDatabase::getProfile(int handle) const
+const Profile& ProfileDatabase::profile(int key) const
 {
-  if (profiles_.count(handle) == 0) {
-    qWarning("Invalid profile handle: %d", handle);
+  if (profiles_.count(key) == 0) {
+    qWarning("Invalid profile key: %d", key);
     return invalid_profile_;
   }
 
-  return *(profiles_.at(handle));
+  return *(profiles_.at(key));
 }
 
-std::vector<int> ProfileDatabase::allHandles() const
+std::vector<int> ProfileDatabase::profileKeys() const
 {
-  std::vector<int> handles;
-  handles.reserve(profiles_.size());
+  std::vector<int> keys;
+  keys.reserve(profiles_.size());
   
   for (auto const &it : profiles_) {
-    handles.push_back(it.first);
+    keys.push_back(it.first);
   }
-  return handles;
+  return keys;
 }
 }  // namespace swri_profiler_tools

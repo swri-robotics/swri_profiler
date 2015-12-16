@@ -62,13 +62,13 @@ void ProfileTreeWidget::setDatabase(ProfileDatabase *db)
                    this, SLOT(handleBlocksAdded(int)));
 }
 
-void ProfileTreeWidget::handleProfileAdded(int handle)
+void ProfileTreeWidget::handleProfileAdded(int profile_key)
 {
   // We can optimize these to be specific later if necessary.
   synchronizeWidget();
 }
 
-void ProfileTreeWidget::handleBlocksAdded(int handle)
+void ProfileTreeWidget::handleBlocksAdded(int profile_key)
 {
   // We can optimize these to be specific later if necessary.
   synchronizeWidget();
@@ -83,9 +83,9 @@ void ProfileTreeWidget::synchronizeWidget()
     return;
   }
 
-  std::vector<int> handles = db_->allHandles();
-  for (auto handle : handles) {
-    const Profile &profile = db_->getProfile(handle);
+  std::vector<int> keys = db_->profileKeys();
+  for (auto key : keys) {
+    const Profile &profile = db_->profile(key);
     QTreeWidgetItem *profile_item = new QTreeWidgetItem(
       QStringList(profile.name()));
     addTopLevelItem(profile_item);

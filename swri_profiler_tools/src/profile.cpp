@@ -38,7 +38,7 @@ namespace swri_profiler_tools
 {
 Profile::Profile()
   :
-  db_handle_(-1),
+  profile_key_(-1),
   min_time_s_(0),
   max_time_s_(0)
 {
@@ -57,21 +57,21 @@ Profile::~Profile()
 {
 }
 
-void Profile::initialize(int db_handle, const QString &name)
+void Profile::initialize(int profile_key, const QString &name)
 {
   if (isValid()) {
     qWarning("Re-initializing a valid profile (%d,%s) with (%d,%s). "
              "Something is probably horribly wrong.",
-             db_handle_, qPrintable(name_),
-             db_handle, qPrintable(name));
+             profile_key_, qPrintable(name_),
+             profile_key, qPrintable(name));
   }
-  db_handle_ = db_handle;
+  profile_key_ = profile_key;
   name_ = name;
 }
 
 void Profile::addData(const NewProfileDataVector &data)
 {
-  if (db_handle_ < 0) {
+  if (profile_key_ < 0) {
     qWarning("Attempt to add %zu elements to an invalid profile.", data.size());
     return;
   }
@@ -114,7 +114,7 @@ void Profile::addData(const NewProfileDataVector &data)
   // If nodes were created, we need to update our indices.
   if (nodes_added) {
     rebuildIndices();
-    Q_EMIT nodesAdded(db_handle_);
+    Q_EMIT nodesAdded(profile_key_);
   }
 
   // Finally, we need to update derived data that may have changed
@@ -124,7 +124,7 @@ void Profile::addData(const NewProfileDataVector &data)
   }
 
   // Notify observers that the profile has new data.
-  Q_EMIT dataAdded(db_handle_);
+  Q_EMIT dataAdded(profile_key_);
 }
 
 void Profile::expandTimeline(const uint64_t sec)

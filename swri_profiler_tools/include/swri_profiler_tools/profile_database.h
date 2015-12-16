@@ -54,17 +54,17 @@ class ProfileDatabase : public QObject
   ProfileDatabase();
   ~ProfileDatabase();
 
-  int createHandle(const QString &name);
+  int createProfile(const QString &name);
 
-  std::vector<int> allHandles() const;
+  std::vector<int> profileKeys() const;
 
-  Profile& getProfile(int handle);
-  const Profile& getProfile(int handle) const;
+  Profile& profile(int key);
+  const Profile& profile(int key) const;
   
  Q_SIGNALS:
-  void profileAdded(int handle);
-  void blocksAdded(int handle);
-  void dataAdded(int handle);
+  void profileAdded(int key);
+  void blocksAdded(int key);
+  void dataAdded(int key);
 };  // class ProfileDatabase
 }  // namespace swri_profiler_tools
 #endif  // SWRI_PROFILER_TOOLS_PROFILE_DATABASE_H_

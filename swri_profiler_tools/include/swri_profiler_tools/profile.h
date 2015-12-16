@@ -141,9 +141,9 @@ class Profile : public QObject
 {
   Q_OBJECT;
 
-  // The handle of this profile in the database.  This is negative for
+  // The key of this profile in the database.  This is negative for
   // an invalid profile.
-  int db_handle_;
+  int profile_key_;
 
   // Name of the profile.  This is initialized by the source and may
   // be modified by the user.
@@ -177,7 +177,7 @@ class Profile : public QObject
   // profiles.  A valid profile is created by initializing a default
   // profile.  Initialization is only allowed to happen once.
   friend class ProfileDatabase;
-  void initialize(int db_handle, const QString &name);
+  void initialize(int profile_key, const QString &name);
 
   void expandTimeline(const uint64_t sec);
   void addDataToAllNodes(const bool back, const size_t count);
@@ -203,15 +203,15 @@ class Profile : public QObject
   ~Profile();
 
   void addData(const NewProfileDataVector &data);
-  const bool isValid() const { return db_handle_ >= 0; }
-  const int dbHandle() const { return db_handle_; }
+  const bool isValid() const { return profile_key_ >= 0; }
+  const int profileKey() const { return profile_key_; }
   const QString& name() const { return name_; }
 
   const ProfileNode& node(int key);
   
  Q_SIGNALS:
-  void nodesAdded(int handle);
-  void dataAdded(int handle);  
+  void nodesAdded(int profile_key);
+  void dataAdded(int profile_key);  
 };  // class Profile
 }  // namespace swri_profiler_tools
 #endif  // SWRI_PROFILER_TOOLS_PROFILE_H_

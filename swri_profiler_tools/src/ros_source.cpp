@@ -37,7 +37,7 @@ RosSource::RosSource(ProfileDatabase *db)
   :
   db_(db),
   backend_(NULL),
-  db_handle_(-1),
+  profile_key_(-1),
   connected_(false)
 {
 }
@@ -87,8 +87,7 @@ void RosSource::handleConnected(bool is_connected, QString uri)
 
   if (!connected_) {
     msg_adapter_.reset();
-    db_handle_ = -1;
-    Q_EMIT activeHandleChanged(db_handle_);
+    profile_key_ = -1;
   }
 }
 
@@ -111,16 +110,14 @@ void RosSource::handleData(swri_profiler_msgs::ProfileDataArray msg)
   // clock.  We'll either allocate a huge timespan or constantly
   // generate new profiles.  Either are really bad.
   
-  if (db_handle_ < 0) {
-    db_handle_ = db_->createHandle("ROS Capture");
-    if (db_handle_ < 0) {
-      qWarning("Failed to get a new database handle. Dropping data.");
+  if (profile_key_ < 0) {
+    profile_key_ = db_->createProfile("ROS Capture");
+    if (profile_key_ < 0) {
+      qWarning("Failed to create a new profile. Dropping data.");
       return;
     }
-
-    Q_EMIT activeHandleChanged(db_handle_);
   }
   
-  db_->getProfile(db_handle_).addData(new_data);
+  db_->profile(profile_key_).addData(new_data);
 }
 }  // namespace swri_profiler_tools
