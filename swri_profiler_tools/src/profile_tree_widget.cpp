@@ -29,6 +29,7 @@
 // *****************************************************************************
 #include <swri_profiler_tools/profile_tree_widget.h>
 #include <swri_profiler_tools/profile_database.h>
+#include <swri_profiler_tools/profile.h>
 
 namespace swri_profiler_tools
 {
@@ -91,6 +92,27 @@ void ProfileTreeWidget::synchronizeWidget()
     QTreeWidgetItem *profile_item = new QTreeWidgetItem(
       QStringList(profile.name()));
     addTopLevelItem(profile_item);
+    for (auto key : profile.rootNode().childrenKeys()) {
+      addNode(profile_item, profile, key);
+    }
   }  
+}
+
+void ProfileTreeWidget::addNode(QTreeWidgetItem *parent,
+                                const Profile &profile,
+                                const int node_key)
+{
+  const ProfileNode &node = profile.node(node_key);
+  if (!node.isValid()) {
+    return;
+  }
+  
+  QTreeWidgetItem *item = new QTreeWidgetItem(
+    QStringList(node.name()));
+  parent->addChild(item);
+  
+  for (auto key : node.childrenKeys()) {
+    addNode(item, profile, key);
+  }    
 }
 }  // namespace swri_profiler_tools

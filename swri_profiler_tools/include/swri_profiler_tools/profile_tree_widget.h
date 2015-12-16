@@ -35,6 +35,7 @@
 namespace swri_profiler_tools
 {
 class ProfileDatabase;
+class Profile;
 
 // Not a big fan of subclassing for this task, but it works for now.
 class ProfileTreeWidget : public QTreeWidget
@@ -54,7 +55,8 @@ class ProfileTreeWidget : public QTreeWidget
   void handleNodesAdded(int profile_key);
 
  private:
-  void synchronizeWidget();  
+  void synchronizeWidget();
+  void addNode(QTreeWidgetItem *parent, const Profile &profile, const int node_key);
 };  // class ProfileTreeWidget
 }  // namespace swri_profiler_tools
 #endif  // SWRI_PROFILER_TOOLS_PROFILE_TREE_WIDGET_H_
