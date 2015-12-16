@@ -27,48 +27,66 @@
 // DAMAGE.
 //
 // *****************************************************************************
+#ifndef SWRI_PROFILER_TOOLS_PARTITION_WIDGET_H_
+#define SWRI_PROFILER_TOOLS_PARTITION_WIDGET_H_
 
-#include <swri_profiler_tools/profiler_window.h>
+#include <QWidget>
+#include <QColor>
+#include <QRectF>
+#include <swri_profiler_tools/database_key.h>
+
+QT_BEGIN_NAMESPACE
+class QGraphicsView;
+QT_END_NAMESPACE
 
 namespace swri_profiler_tools
 {
-ProfilerWindow::ProfilerWindow(ProfileDatabase *db)
-  :
-  QMainWindow(),
-  db_(db)
+class ProfileDatabase;
+class PartitionWidget : public QWidget
 {
-  ui.setupUi(this);
+  Q_OBJECT;
 
-  QObject::connect(ui.action_NewWindow, SIGNAL(triggered(bool)),
-                   this, SIGNAL(createNewWindow()));
+  ProfileDatabase *db_;
+  QGraphicsView *view_;
+  DatabaseKey active_key_;
+  
+ public:
+  PartitionWidget(QWidget *parent=0);
+  ~PartitionWidget();
+  void setDatabase(ProfileDatabase *db);
 
-  connection_status_ = new QLabel("Not connected");
-  statusBar()->addPermanentWidget(connection_status_);
+ public Q_SLOTS:
+  void setActiveNode(int profile_key, int node_key);
 
-  ui.profileTree->setDatabase(db_);
-  ui.partitionWidget->setDatabase(db_);
+ Q_SIGNALS:
+  void activeNodeChanged(int profile_key, int node_key);
 
-  QObject::connect(ui.profileTree, SIGNAL(activeNodeChanged(int,int)),
-                   ui.partitionWidget, SLOT(setActiveNode(int,int)));
-}
+                                       
+ private Q_SLOTS:
+  void handleProfileAdded(int profile_key);
+  void handleNodesAdded(int profile_key);
+  // void handleItemActivated(QTreeWidgetItem *item, int column);
+  // void handleTreeContextMenuRequest(const QPoint &pos);
 
-ProfilerWindow::~ProfilerWindow()
-{
-}
+ private:
+  void synchronizeWidget();
+  // void addProfile(int profile_key);
+  // void addNode(QTreeWidgetItem *parent, const Profile &profile, const int node_key);
 
-void ProfilerWindow::closeEvent(QCloseEvent *event)
-{
-  QMainWindow::closeEvent(event);
-}
-
-void ProfilerWindow::rosConnected(bool connected, QString master_uri)
-{
-  if (connected) {    
-    statusBar()->showMessage("Connected to ROS Master " + master_uri);
-    connection_status_->setText(master_uri);
-  } else {
-    statusBar()->showMessage("Disconnected from ROS Master");
-    connection_status_->setText("Not connected");
-  }
-}
+  struct ParitionItem
+  {
+    int profile_key;
+    int node_key;
+    QColor color;
+    QString name;
+    QRectF full_rect;
+    QRectF level_rect;
+  };
+  void generatePartition();
+  
+ protected:
+  void paintEvent(QPaintEvent *event);
+};  // class PartitionWidget  
 }  // namespace swri_profiler_tools
+#endif  // SWRI_PROFILER_TOOLS_PARTITION_WIDGET_H_
+

@@ -27,48 +27,88 @@
 // DAMAGE.
 //
 // *****************************************************************************
+#include <swri_profiler_tools/partition_widget.h>
 
-#include <swri_profiler_tools/profiler_window.h>
+#include <QGraphicsView>
+#include <QVBoxLayout>
+
+#include <swri_profiler_tools/profile_database.h>
+
 
 namespace swri_profiler_tools
 {
-ProfilerWindow::ProfilerWindow(ProfileDatabase *db)
+PartitionWidget::PartitionWidget(QWidget *parent)
   :
-  QMainWindow(),
-  db_(db)
+  QWidget(parent),
+  db_(NULL)
 {
-  ui.setupUi(this);
+  view_ = new QGraphicsView(this);
 
-  QObject::connect(ui.action_NewWindow, SIGNAL(triggered(bool)),
-                   this, SIGNAL(createNewWindow()));
-
-  connection_status_ = new QLabel("Not connected");
-  statusBar()->addPermanentWidget(connection_status_);
-
-  ui.profileTree->setDatabase(db_);
-  ui.partitionWidget->setDatabase(db_);
-
-  QObject::connect(ui.profileTree, SIGNAL(activeNodeChanged(int,int)),
-                   ui.partitionWidget, SLOT(setActiveNode(int,int)));
+  auto *main_layout = new QVBoxLayout();
+  main_layout->addWidget(view_);
+  main_layout->setContentsMargins(0,0,0,0);
+  setLayout(main_layout);  
 }
 
-ProfilerWindow::~ProfilerWindow()
+PartitionWidget::~PartitionWidget()
 {
 }
 
-void ProfilerWindow::closeEvent(QCloseEvent *event)
+void PartitionWidget::setDatabase(ProfileDatabase *db)
 {
-  QMainWindow::closeEvent(event);
-}
-
-void ProfilerWindow::rosConnected(bool connected, QString master_uri)
-{
-  if (connected) {    
-    statusBar()->showMessage("Connected to ROS Master " + master_uri);
-    connection_status_->setText(master_uri);
-  } else {
-    statusBar()->showMessage("Disconnected from ROS Master");
-    connection_status_->setText("Not connected");
+  if (db_) {
+    // note(exjohnson): we can implement this later if desired, but
+    // currently no use case for it.
+    qWarning("PartitionWidget: Cannot change the profile database.");
+    return;
   }
+
+  db_ = db;
+  
+  synchronizeWidget();
+
+  QObject::connect(db_, SIGNAL(profileModified(int)),
+                   this, SLOT(handleProfileAdded(int)));
+  QObject::connect(db_, SIGNAL(profileAdded(int)),
+                   this, SLOT(handleProfileAdded(int)));
+  QObject::connect(db_, SIGNAL(nodesAdded(int)),
+                   this, SLOT(handleNodesAdded(int)));
+}
+  
+void PartitionWidget::handleProfileAdded(int profile_key)
+{
+  // We can optimize these to be specific later if necessary.
+  synchronizeWidget();
+}
+
+void PartitionWidget::handleNodesAdded(int profile_key)
+{
+  // We can optimize these to be specific later if necessary.
+  synchronizeWidget();
+}
+
+void PartitionWidget::synchronizeWidget()
+{
+}
+
+void generatePartition()
+{
+  
+  
+}
+
+void PartitionWidget::paintEvent(QPaintEvent *)
+{
+  qWarning("repaint");
+  QPainter painter(this);
+
+  painter.setPen(Qt::NoPen);
+  painter.fillRect(0, 0, width(), height(), QColor(255, 255, 255));
+}
+
+void PartitionWidget::setActiveNode(int profile_key, int node_key)
+{
+  active_key_ = DatabaseKey(profile_key, node_key);
+  repaint();
 }
 }  // namespace swri_profiler_tools

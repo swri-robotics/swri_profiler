@@ -49,6 +49,7 @@ set(MOC_HEADER_FILES
   include/swri_profiler_tools/profile_database.h
   include/swri_profiler_tools/profile.h
   include/swri_profiler_tools/profile_tree_widget.h
+  include/swri_profiler_tools/partition_widget.h
   )
 
 set(SRC_FILES
@@ -63,6 +64,7 @@ set(SRC_FILES
   src/profiler_msg_adapter.cpp
   src/profile_tree_widget.cpp
   src/util.cpp
+  src/partition_widget.cpp
   )
 qt4_add_resources(RCC_SRCS resources/images.qrc)
 

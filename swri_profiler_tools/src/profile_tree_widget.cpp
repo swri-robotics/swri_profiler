@@ -65,7 +65,6 @@ ProfileTreeWidget::ProfileTreeWidget(QWidget *parent)
                    this, SLOT(handleItemActivated(QTreeWidgetItem*, int)));
   
   auto *main_layout = new QVBoxLayout();  
-
   main_layout->addWidget(tree_widget_);
   main_layout->setContentsMargins(0,0,0,0);
   setLayout(main_layout);

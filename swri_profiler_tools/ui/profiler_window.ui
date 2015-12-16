@@ -33,7 +33,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QWidget" name="partitionWidget" native="true">
+         <widget class="swri_profiler_tools::PartitionWidget" name="partitionWidget" native="true">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
             <horstretch>0</horstretch>
@@ -94,6 +94,12 @@
    <class>swri_profiler_tools::ProfileTreeWidget</class>
    <extends>QWidget</extends>
    <header location="global">swri_profiler_tools/profile_tree_widget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>swri_profiler_tools::PartitionWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">swri_profiler_tools/partition_widget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

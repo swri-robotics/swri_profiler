@@ -27,7 +27,6 @@
 // DAMAGE.
 //
 // *****************************************************************************
-
 #ifndef SWRI_PROFILER_TOOLS_PROFILE_TREE_WIDGET_H_
 #define SWRI_PROFILER_TOOLS_PROFILE_TREE_WIDGET_H_
 
@@ -59,7 +58,7 @@ class ProfileTreeWidget : public QWidget
   
  public:
   ProfileTreeWidget(QWidget *parent=0);
-  virtual ~ProfileTreeWidget();
+  ~ProfileTreeWidget();
 
   void setDatabase(ProfileDatabase *db);
 
@@ -81,7 +80,7 @@ class ProfileTreeWidget : public QWidget
 
   QString nameForKey(const DatabaseKey &key) const;
   void markItemActive(const DatabaseKey &key);
-  void markItemInactive(const DatabaseKey &key);  
+  void markItemInactive(const DatabaseKey &key);
 };  // class ProfileTreeWidget
 }  // namespace swri_profiler_tools
 #endif  // SWRI_PROFILER_TOOLS_PROFILE_TREE_WIDGET_H_
