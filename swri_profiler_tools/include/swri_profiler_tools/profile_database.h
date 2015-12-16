@@ -49,22 +49,25 @@ class ProfileDatabase : public QObject
   // map because the map relies on operations that Qt doesn't permit
   // on QObject descendents.
   std::unordered_map<int, Profile*> profiles_;
-
+  // This provides stable ordering for the profiles.
+  std::vector<int> profiles_list_;
+  
  public:
   ProfileDatabase();
   ~ProfileDatabase();
 
   int createProfile(const QString &name);
 
-  std::vector<int> profileKeys() const;
+  std::vector<int> profileKeys() const { return profiles_list_; }
 
   Profile& profile(int key);
   const Profile& profile(int key) const;
   
  Q_SIGNALS:
-  void profileAdded(int key);
-  void blocksAdded(int key);
-  void dataAdded(int key);
+  void profileAdded(int profile_key);
+  void profileModified(int profile_key); 
+  void nodesAdded(int profile_key);
+  void dataAdded(int profile_key);
 };  // class ProfileDatabase
 }  // namespace swri_profiler_tools
 #endif  // SWRI_PROFILER_TOOLS_PROFILE_DATABASE_H_

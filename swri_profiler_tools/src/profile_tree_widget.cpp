@@ -55,11 +55,13 @@ void ProfileTreeWidget::setDatabase(ProfileDatabase *db)
   db_ = db;
   
   synchronizeWidget();
-  
+
+  QObject::connect(db_, SIGNAL(profileModified(int)),
+                   this, SLOT(handleProfileAdded(int)));
   QObject::connect(db_, SIGNAL(profileAdded(int)),
                    this, SLOT(handleProfileAdded(int)));
-  QObject::connect(db_, SIGNAL(blocksAdded(int)),
-                   this, SLOT(handleBlocksAdded(int)));
+  QObject::connect(db_, SIGNAL(nodesAdded(int)),
+                   this, SLOT(handleNodesAdded(int)));
 }
 
 void ProfileTreeWidget::handleProfileAdded(int profile_key)
@@ -68,7 +70,7 @@ void ProfileTreeWidget::handleProfileAdded(int profile_key)
   synchronizeWidget();
 }
 
-void ProfileTreeWidget::handleBlocksAdded(int profile_key)
+void ProfileTreeWidget::handleNodesAdded(int profile_key)
 {
   // We can optimize these to be specific later if necessary.
   synchronizeWidget();

@@ -33,6 +33,9 @@
 
 namespace swri_profiler_tools
 {
+static const QString LIVE_PROFILE_NAME = "ROS Capture [current]";
+static const QString DEAD_PROFILE_NAME = "ROS Capture";
+
 RosSource::RosSource(ProfileDatabase *db)
   :
   db_(db),
@@ -87,6 +90,13 @@ void RosSource::handleConnected(bool is_connected, QString uri)
 
   if (!connected_) {
     msg_adapter_.reset();
+
+    if (profile_key_ >= 0) {
+      Profile &profile = db_->profile(profile_key_);
+      if (profile.isValid() && profile.name() == LIVE_PROFILE_NAME) {
+        profile.setName(DEAD_PROFILE_NAME);
+      }
+    }      
     profile_key_ = -1;
   }
 }
@@ -111,7 +121,7 @@ void RosSource::handleData(swri_profiler_msgs::ProfileDataArray msg)
   // generate new profiles.  Either are really bad.
   
   if (profile_key_ < 0) {
-    profile_key_ = db_->createProfile("ROS Capture");
+    profile_key_ = db_->createProfile(LIVE_PROFILE_NAME);
     if (profile_key_ < 0) {
       qWarning("Failed to create a new profile. Dropping data.");
       return;

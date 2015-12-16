@@ -22,14 +22,17 @@ int ProfileDatabase::createProfile(const QString &name)
 
   // We are creating a new key
   profiles_[key] = new Profile();
+  profiles_list_.push_back(key);
   Profile &profile = *(profiles_.at(key));
   profile.initialize(key, name);
 
   // We rebroadcast the individual profile signals in bulk so that
   // other objects can just connect to us and not deal with
   // adding/removing connections as profiles are added or deleted.
-  QObject::connect(&profile, SIGNAL(blocksAdded(int)),
-                   this, SIGNAL(blocksAdded(int)));
+  QObject::connect(&profile, SIGNAL(profileModified(int)),
+                   this, SIGNAL(profileModified(int)));
+  QObject::connect(&profile, SIGNAL(nodesAdded(int)),
+                   this, SIGNAL(nodesAdded(int)));
   QObject::connect(&profile, SIGNAL(dataAdded(int)),
                    this, SIGNAL(dataAdded(int)));
     
@@ -55,16 +58,5 @@ const Profile& ProfileDatabase::profile(int key) const
   }
 
   return *(profiles_.at(key));
-}
-
-std::vector<int> ProfileDatabase::profileKeys() const
-{
-  std::vector<int> keys;
-  keys.reserve(profiles_.size());
-  
-  for (auto const &it : profiles_) {
-    keys.push_back(it.first);
-  }
-  return keys;
 }
 }  // namespace swri_profiler_tools

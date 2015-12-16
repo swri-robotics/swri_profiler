@@ -51,7 +51,7 @@ class ProfileTreeWidget : public QTreeWidget
 
  private Q_SLOTS:
   void handleProfileAdded(int profile_key);
-  void handleBlocksAdded(int profile_key);
+  void handleNodesAdded(int profile_key);
 
  private:
   void synchronizeWidget();  

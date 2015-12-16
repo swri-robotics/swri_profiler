@@ -36,6 +36,9 @@
 
 namespace swri_profiler_tools
 {
+// A null object to return for invalid keys.
+static const ProfileNode invalid_node_;
+
 Profile::Profile()
   :
   profile_key_(-1),
@@ -353,13 +356,13 @@ void Profile::rebuildTreeIndex()
       continue;
     }
 
-    if (nodes_.count(node.parent()) == 0) {
+    if (nodes_.count(node.parentKey()) == 0) {
       qWarning("Profile node %d's parent (%d) was not found in nodes_. This should never happen.",
-               key, node.parent());
+               key, node.parentKey());
       continue;
     }
 
-    ProfileNode &parent = nodes_.at(node.parent());
+    ProfileNode &parent = nodes_.at(node.parentKey());
     parent.children_.push_back(key);
   }
 }
@@ -381,7 +384,7 @@ void Profile::updateDerivedDataInternal(ProfileNode &node, size_t index)
   uint64_t children_inc_incl_duration = 0;
   uint64_t children_inc_max_duration = 0;
 
-  for (auto &child_key : node.children()) {
+  for (auto &child_key : node.childrenKeys()) {
     if (nodes_.count(child_key) == 0) {
       qWarning("Invalid child key in updateDerivedDataInternal");
       continue;
@@ -406,5 +409,31 @@ void Profile::updateDerivedDataInternal(ProfileNode &node, size_t index)
 
   data.cumulative_exclusive_duration_ns = data.cumulative_inclusive_duration_ns - children_cum_incl_duration;
   data.incremental_exclusive_duration_ns = data.incremental_inclusive_duration_ns - children_inc_incl_duration;
+}
+
+void Profile::setName(const QString &name)
+{
+  name_ = name;
+  Q_EMIT profileModified(profile_key_);
+}
+
+const ProfileNode& Profile::node(int node_key) const
+{
+  if (nodes_.count(node_key) == 0) {
+    qWarning("Someone requested an invalid node (%d) from profile (%d)",
+             node_key, profile_key_);
+    return invalid_node_;
+  }
+  return nodes_.at(node_key);
+}
+
+const ProfileNode& Profile::rootNode() const
+{
+  return node(0);
+}
+
+const std::vector<int>& Profile::nodeKeys() const
+{
+  return flat_index_;
 }
 }  // namespace swri_profiler_tools

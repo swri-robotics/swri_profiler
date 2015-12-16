@@ -133,13 +133,14 @@ class ProfileNode
   bool isMeasured() const { return measured_; }
   const std::deque<ProfileEntry>& data() { return data_; }
   int depth() const { return depth_; }
-  int parent() const { return parent_; }
-  const std::vector<int>& children() const { return children_; }    
+  int parentKey() const { return parent_; }
+  const std::vector<int>& childrenKeys() const { return children_; }    
 };  // class ProfileNode
 
 class Profile : public QObject
 {
   Q_OBJECT;
+
 
   // The key of this profile in the database.  This is negative for
   // an invalid profile.
@@ -197,7 +198,7 @@ class Profile : public QObject
   
   void updateDerivedData(size_t index);
   void updateDerivedDataInternal(ProfileNode& node, size_t index);
-  
+
  public:
   Profile();
   ~Profile();
@@ -205,11 +206,17 @@ class Profile : public QObject
   void addData(const NewProfileDataVector &data);
   const bool isValid() const { return profile_key_ >= 0; }
   const int profileKey() const { return profile_key_; }
-  const QString& name() const { return name_; }
 
-  const ProfileNode& node(int key);
+  const QString& name() const { return name_; }
+  void setName(const QString &name);
+
+  const ProfileNode& node(int node_key) const;
+  const ProfileNode& rootNode() const;
+  const std::vector<int>& nodeKeys() const;
   
  Q_SIGNALS:
+  // Emitted when the profile is renamed.
+  void profileModified(int profile_key);
   void nodesAdded(int profile_key);
   void dataAdded(int profile_key);  
 };  // class Profile
