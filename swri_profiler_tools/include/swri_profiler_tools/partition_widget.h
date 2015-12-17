@@ -36,7 +36,6 @@
 #include <swri_profiler_tools/database_key.h>
 
 QT_BEGIN_NAMESPACE
-class QGraphicsView;
 QT_END_NAMESPACE
 
 namespace swri_profiler_tools
@@ -47,7 +46,6 @@ class PartitionWidget : public QWidget
   Q_OBJECT;
 
   ProfileDatabase *db_;
-  QGraphicsView *view_;
   DatabaseKey active_key_;
   
  public:
@@ -60,18 +58,6 @@ class PartitionWidget : public QWidget
 
  Q_SIGNALS:
   void activeNodeChanged(int profile_key, int node_key);
-
-                                       
- private Q_SLOTS:
-  void handleProfileAdded(int profile_key);
-  void handleNodesAdded(int profile_key);
-  // void handleItemActivated(QTreeWidgetItem *item, int column);
-  // void handleTreeContextMenuRequest(const QPoint &pos);
-
- private:
-  void synchronizeWidget();
-  // void addProfile(int profile_key);
-  // void addNode(QTreeWidgetItem *parent, const Profile &profile, const int node_key);
 
  protected:
   void paintEvent(QPaintEvent *event);

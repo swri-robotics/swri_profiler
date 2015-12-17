@@ -31,6 +31,7 @@
 
 #include <QGraphicsView>
 #include <QVBoxLayout>
+#include <QDebug>
 
 #include <swri_profiler_tools/profile_database.h>
 
@@ -45,9 +46,15 @@ struct PartitionLayoutItem
   uint64_t span_end;
 };
 
+struct PartitionGraphicsItem
+{
+  QColor color;
+  QRect rect;
+};
+
 typedef std::vector<std::vector<PartitionLayoutItem> > PartitionLayout;
 
-QColor colorFromName(const QString &name)
+static QColor colorFromString(const QString &name)
 {
   size_t name_hash = std::hash<std::string>{}(name.toStdString());
   
@@ -57,8 +64,8 @@ QColor colorFromName(const QString &name)
   return QColor::fromHsv(h, s, v);
 }
 
-void layoutPartition(PartitionLayout &layout,
-                     const Profile &profile)
+static void layoutPartition(PartitionLayout &layout,
+                            const Profile &profile)
 {
   const ProfileNode &root_node = profile.rootNode();
   if (!root_node.isValid()) {
@@ -86,11 +93,11 @@ void layoutPartition(PartitionLayout &layout,
     keep_going = false;
     
     layout.emplace_back();
-    const std::vector<PartitionLayoutItem> &parent_row = layout[layout.size()-2];
-    std::vector<PartitionLayoutItem> &child_row = layout[layout.size()-1];
+    const std::vector<PartitionLayoutItem> &parents = layout[layout.size()-2];
+    std::vector<PartitionLayoutItem> &children = layout[layout.size()-1];
 
     size_t span_start = 0;
-    for (auto const &parent_item : parent_row) {      
+    for (auto const &parent_item : parents) {      
       const ProfileNode &parent_node = profile.node(parent_item.node_key);
 
       // Add the carry-over exclusive item.
@@ -100,7 +107,7 @@ void layoutPartition(PartitionLayout &layout,
         item.exclusive = true;
         item.span_start = span_start;
         item.span_end = span_start + parent_node.data().back().cumulative_exclusive_duration_ns;
-        child_row.push_back(item);
+        children.push_back(item);
         span_start = item.span_end;
       }
 
@@ -117,7 +124,7 @@ void layoutPartition(PartitionLayout &layout,
         item.exclusive = false;
         item.span_start = span_start;
         item.span_end = span_start + child_node.data().back().cumulative_inclusive_duration_ns;
-        child_row.push_back(item);
+        children.push_back(item);
         span_start = item.span_end;
 
         keep_going |= child_node.hasChildren();
@@ -132,25 +139,48 @@ void layoutPartition(PartitionLayout &layout,
       qWarning("Unexpected database inconsistency (2): %zu vs %zu", span_start, root_item.span_end);
     }
   }
-
-  qWarning("Layout has %zu rows", layout.size());
-  for (auto const &row : layout) {
-    qWarning("  Row has %zu items", row.size());
-  }
 }                      
 
+void renderPartition(std::vector<PartitionGraphicsItem> &items,
+                     const Profile &profile,
+                     const PartitionLayout &layout,
+                     int width, int height)
+{
+  if (layout.empty() || layout.back().empty()) {
+    return;
+  }
+  
+  double px_per_col = static_cast<double>(width-1) / layout.size();
+  double px_per_span = static_cast<double>(height-1) / layout.back().back().span_end;
+  
+  for (size_t col = 0; col < layout.size(); col++) {
+    for (size_t row = 0; row < layout[col].size(); row++) {
+      const PartitionLayoutItem &layout_item = layout[col][row];
+
+      if (layout_item.exclusive) {
+        continue;
+      }
+      
+      const ProfileNode &node = profile.node(layout_item.node_key);
+
+      PartitionGraphicsItem gfx_item;
+      gfx_item.color = colorFromString(node.name());
+
+      QPoint top_left(std::round(px_per_col*col),
+                      std::round(px_per_span*layout_item.span_start));
+      QPoint bottom_right(width, height);
+              
+      gfx_item.rect = QRect(top_left, bottom_right);      
+      items.push_back(gfx_item);
+    }
+  }
+}
 
 PartitionWidget::PartitionWidget(QWidget *parent)
   :
   QWidget(parent),
   db_(NULL)
 {
-  view_ = new QGraphicsView(this);
-
-  auto *main_layout = new QVBoxLayout();
-  main_layout->addWidget(view_);
-  main_layout->setContentsMargins(0,0,0,0);
-  setLayout(main_layout);  
 }
 
 PartitionWidget::~PartitionWidget()
@@ -167,51 +197,45 @@ void PartitionWidget::setDatabase(ProfileDatabase *db)
   }
 
   db_ = db;
-  
-  synchronizeWidget();
 
-  QObject::connect(db_, SIGNAL(profileModified(int)),
-                   this, SLOT(handleProfileAdded(int)));
+  update();
+
+  QObject::connect(db_, SIGNAL(dataAdded(int)),
+                   this, SLOT(update()));
   QObject::connect(db_, SIGNAL(profileAdded(int)),
-                   this, SLOT(handleProfileAdded(int)));
+                   this, SLOT(update()));
   QObject::connect(db_, SIGNAL(nodesAdded(int)),
-                   this, SLOT(handleNodesAdded(int)));
-}
-  
-void PartitionWidget::handleProfileAdded(int profile_key)
-{
-  // We can optimize these to be specific later if necessary.
-  synchronizeWidget();
-}
-
-void PartitionWidget::handleNodesAdded(int profile_key)
-{
-  // We can optimize these to be specific later if necessary.
-  synchronizeWidget();
-}
-
-void PartitionWidget::synchronizeWidget()
-{
+                   this, SLOT(update()));
 }
 
 void PartitionWidget::paintEvent(QPaintEvent *)
 {
-  qWarning("repaint");
   QPainter painter(this);
 
   painter.setPen(Qt::NoPen);
   painter.fillRect(0, 0, width(), height(), QColor(255, 255, 255));
+  
+  if (!active_key_.isValid()) {
+    return;
+  }    
 
-  if (active_key_.isValid()) {
-    const Profile &profile = db_->profile(active_key_.profileKey());
-    PartitionLayout layout;
-    layoutPartition(layout, profile);
+  const Profile &profile = db_->profile(active_key_.profileKey());
+  PartitionLayout layout;
+  layoutPartition(layout, profile);
+
+  std::vector<PartitionGraphicsItem> gfx_items;
+  renderPartition(gfx_items, profile, layout, width(), height());
+
+  painter.setPen(Qt::black);  
+  for (auto const &item : gfx_items) {
+    painter.setBrush(item.color);
+    painter.drawRect(item.rect.adjusted(0,0,-2,-2));
   }
 }
 
 void PartitionWidget::setActiveNode(int profile_key, int node_key)
 {
   active_key_ = DatabaseKey(profile_key, node_key);
-  repaint();
+  update();
 }
 }  // namespace swri_profiler_tools
