@@ -44,7 +44,7 @@ struct DatabaseKey
   DatabaseKey(int profile_key, int node_key=-1)
     : profile_key_(profile_key), node_key_(node_key) {}
 
-  bool isValid() const { return profile_key_ < 0; }
+  bool isValid() const { return profile_key_ >= 0; }
   bool isProfile() const { return profile_key_ >= 0 && node_key_ < 0; }
   bool isNode() const { return profile_key_ >= 0 && node_key_ >= 0; }
 

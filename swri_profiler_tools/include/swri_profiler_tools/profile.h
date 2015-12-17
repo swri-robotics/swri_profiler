@@ -131,10 +131,11 @@ class ProfileNode
   const QString& name() const { return name_; }
   const QString& path() const { return path_; }
   bool isMeasured() const { return measured_; }
-  const std::deque<ProfileEntry>& data() { return data_; }
+  const std::deque<ProfileEntry>& data() const { return data_; }
   int depth() const { return depth_; }
   int parentKey() const { return parent_; }
-  const std::vector<int>& childKeys() const { return children_; }    
+  const std::vector<int>& childKeys() const { return children_; }
+  bool hasChildren() const { return !children_.empty(); }
 };  // class ProfileNode
 
 class Profile : public QObject

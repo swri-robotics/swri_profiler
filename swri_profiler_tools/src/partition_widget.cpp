@@ -37,15 +37,15 @@
 
 namespace swri_profiler_tools
 {
-struct PartitionItem
+struct PartitionLayoutItem
 {
   int node_key;
-  bool implicit;
+  bool exclusive;
   uint64_t span_start;
   uint64_t span_end;
 };
 
-typedef std::vector<std::vector<PartitionItem> > PartitionResult;
+typedef std::vector<std::vector<PartitionLayoutItem> > PartitionLayout;
 
 QColor colorFromName(const QString &name)
 {
@@ -57,28 +57,87 @@ QColor colorFromName(const QString &name)
   return QColor::fromHsv(h, s, v);
 }
 
-// void generatePartition(PartitionResult &result,
-//                        const Profile &profile)
-// {
-//   const ProfileNode &root_node = profile.rootNode();
-//   if (!root_node.isValid()) {
-//     qWarning("Profile returned invalid root node.");
-//     return;
-//   }
+void layoutPartition(PartitionLayout &layout,
+                     const Profile &profile)
+{
+  const ProfileNode &root_node = profile.rootNode();
+  if (!root_node.isValid()) {
+    qWarning("Profile returned invalid root node.");
+    return;
+  }
 
-//   if (root_node.data().empty()) {
-//     qWarning("Profile has no data.");
-//     return;
-//   }
+  if (root_node.data().empty()) {
+    qWarning("Profile has no data.");
+    return;
+  }
   
-//   PartitionItem item;
-//   item.node_key = 0;
-//   item.span_start = 0;
-//   item.span_end = root_node.data().back().cumulative_inclusive_duration_ns;
-//   result.emplace_back();
-//   result.back().push_back(item);
+  PartitionLayoutItem root_item;
+  root_item.node_key = root_node.nodeKey();
+  root_item.exclusive = false;
+  root_item.span_start = 0;
+  root_item.span_end = root_node.data().back().cumulative_inclusive_duration_ns;
+  layout.emplace_back();
+  layout.back().push_back(root_item);
 
-// }                      
+  bool keep_going = root_node.hasChildren();
+
+  while (keep_going) {
+    // We going to stop unless we see some children.
+    keep_going = false;
+    
+    layout.emplace_back();
+    const std::vector<PartitionLayoutItem> &parent_row = layout[layout.size()-2];
+    std::vector<PartitionLayoutItem> &child_row = layout[layout.size()-1];
+
+    size_t span_start = 0;
+    for (auto const &parent_item : parent_row) {      
+      const ProfileNode &parent_node = profile.node(parent_item.node_key);
+
+      // Add the carry-over exclusive item.
+      {
+        PartitionLayoutItem item;
+        item.node_key = parent_item.node_key;
+        item.exclusive = true;
+        item.span_start = span_start;
+        item.span_end = span_start + parent_node.data().back().cumulative_exclusive_duration_ns;
+        child_row.push_back(item);
+        span_start = item.span_end;
+      }
+
+      // Don't add children for an exclusive item because they've already been added.
+      if (parent_item.exclusive) {
+        continue;
+      }
+      
+      for (int child_key : parent_node.childKeys()) {
+        const ProfileNode &child_node = profile.node(child_key);
+        
+        PartitionLayoutItem item;
+        item.node_key = child_key;
+        item.exclusive = false;
+        item.span_start = span_start;
+        item.span_end = span_start + child_node.data().back().cumulative_inclusive_duration_ns;
+        child_row.push_back(item);
+        span_start = item.span_end;
+
+        keep_going |= child_node.hasChildren();
+      }
+
+      if (span_start != parent_item.span_end) {
+        qWarning("Unexpected database inconsistency (1): %zu vs %zu", span_start, parent_item.span_end);
+      }
+    }
+
+    if (span_start != root_item.span_end) {
+      qWarning("Unexpected database inconsistency (2): %zu vs %zu", span_start, root_item.span_end);
+    }
+  }
+
+  qWarning("Layout has %zu rows", layout.size());
+  for (auto const &row : layout) {
+    qWarning("  Row has %zu items", row.size());
+  }
+}                      
 
 
 PartitionWidget::PartitionWidget(QWidget *parent)
@@ -142,6 +201,12 @@ void PartitionWidget::paintEvent(QPaintEvent *)
 
   painter.setPen(Qt::NoPen);
   painter.fillRect(0, 0, width(), height(), QColor(255, 255, 255));
+
+  if (active_key_.isValid()) {
+    const Profile &profile = db_->profile(active_key_.profileKey());
+    PartitionLayout layout;
+    layoutPartition(layout, profile);
+  }
 }
 
 void PartitionWidget::setActiveNode(int profile_key, int node_key)
