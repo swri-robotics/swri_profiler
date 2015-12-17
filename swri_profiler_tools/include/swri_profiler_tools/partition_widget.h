@@ -73,17 +73,6 @@ class PartitionWidget : public QWidget
   // void addProfile(int profile_key);
   // void addNode(QTreeWidgetItem *parent, const Profile &profile, const int node_key);
 
-  struct ParitionItem
-  {
-    int profile_key;
-    int node_key;
-    QColor color;
-    QString name;
-    QRectF full_rect;
-    QRectF level_rect;
-  };
-  void generatePartition();
-  
  protected:
   void paintEvent(QPaintEvent *event);
 };  // class PartitionWidget  
