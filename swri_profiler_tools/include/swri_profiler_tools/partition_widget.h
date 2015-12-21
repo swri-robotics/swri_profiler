@@ -40,14 +40,12 @@ QT_END_NAMESPACE
 
 namespace swri_profiler_tools
 {
+class Profile;
 class ProfileDatabase;
 class PartitionWidget : public QWidget
 {
   Q_OBJECT;
 
-  ProfileDatabase *db_;
-  DatabaseKey active_key_;
-  
  public:
   PartitionWidget(QWidget *parent=0);
   ~PartitionWidget();
@@ -59,6 +57,32 @@ class PartitionWidget : public QWidget
  Q_SIGNALS:
   void activeNodeChanged(int profile_key, int node_key);
 
+ private:
+  // This structure stores information about how profile nodes are
+  // laid out.
+  struct LayoutItem
+  {
+    int node_key;
+    bool exclusive;
+    double span_start;
+    double span_end;
+  };
+  typedef std::vector<std::vector<LayoutItem> > Layout;
+  
+  ProfileDatabase *db_;
+  DatabaseKey active_key_;
+
+  Layout current_layout_;
+  Layout layoutProfile(const Profile &profile);
+
+  void renderLayout(QPainter &painter,
+                    const QTransform &win_from_rect,
+                    const Layout &layout,
+                    const Profile &profile);
+
+  QTransform getTransform(const QRectF &win_rect,
+                          const QRectF &data_rect);
+  
  protected:
   void paintEvent(QPaintEvent *event);
 };  // class PartitionWidget  

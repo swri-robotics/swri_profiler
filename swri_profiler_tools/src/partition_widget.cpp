@@ -35,25 +35,8 @@
 
 #include <swri_profiler_tools/profile_database.h>
 
-
 namespace swri_profiler_tools
 {
-struct PartitionLayoutItem
-{
-  int node_key;
-  bool exclusive;
-  uint64_t span_start;
-  uint64_t span_end;
-};
-
-struct PartitionGraphicsItem
-{
-  QColor color;
-  QRect rect;
-};
-
-typedef std::vector<std::vector<PartitionLayoutItem> > PartitionLayout;
-
 static QColor colorFromString(const QString &name)
 {
   size_t name_hash = std::hash<std::string>{}(name.toStdString());
@@ -62,118 +45,6 @@ static QColor colorFromString(const QString &name)
   int s = (name_hash >> 8) % 200 + 55;
   int v = (name_hash >> 16) % 200 + 55;
   return QColor::fromHsv(h, s, v);
-}
-
-static void layoutPartition(PartitionLayout &layout,
-                            const Profile &profile)
-{
-  const ProfileNode &root_node = profile.rootNode();
-  if (!root_node.isValid()) {
-    qWarning("Profile returned invalid root node.");
-    return;
-  }
-
-  if (root_node.data().empty()) {
-    qWarning("Profile has no data.");
-    return;
-  }
-  
-  PartitionLayoutItem root_item;
-  root_item.node_key = root_node.nodeKey();
-  root_item.exclusive = false;
-  root_item.span_start = 0;
-  root_item.span_end = root_node.data().back().cumulative_inclusive_duration_ns;
-  layout.emplace_back();
-  layout.back().push_back(root_item);
-
-  bool keep_going = root_node.hasChildren();
-
-  while (keep_going) {
-    // We going to stop unless we see some children.
-    keep_going = false;
-    
-    layout.emplace_back();
-    const std::vector<PartitionLayoutItem> &parents = layout[layout.size()-2];
-    std::vector<PartitionLayoutItem> &children = layout[layout.size()-1];
-
-    size_t span_start = 0;
-    for (auto const &parent_item : parents) {      
-      const ProfileNode &parent_node = profile.node(parent_item.node_key);
-
-      // Add the carry-over exclusive item.
-      {
-        PartitionLayoutItem item;
-        item.node_key = parent_item.node_key;
-        item.exclusive = true;
-        item.span_start = span_start;
-        item.span_end = span_start + parent_node.data().back().cumulative_exclusive_duration_ns;
-        children.push_back(item);
-        span_start = item.span_end;
-      }
-
-      // Don't add children for an exclusive item because they've already been added.
-      if (parent_item.exclusive) {
-        continue;
-      }
-      
-      for (int child_key : parent_node.childKeys()) {
-        const ProfileNode &child_node = profile.node(child_key);
-        
-        PartitionLayoutItem item;
-        item.node_key = child_key;
-        item.exclusive = false;
-        item.span_start = span_start;
-        item.span_end = span_start + child_node.data().back().cumulative_inclusive_duration_ns;
-        children.push_back(item);
-        span_start = item.span_end;
-
-        keep_going |= child_node.hasChildren();
-      }
-
-      if (span_start != parent_item.span_end) {
-        qWarning("Unexpected database inconsistency (1): %zu vs %zu", span_start, parent_item.span_end);
-      }
-    }
-
-    if (span_start != root_item.span_end) {
-      qWarning("Unexpected database inconsistency (2): %zu vs %zu", span_start, root_item.span_end);
-    }
-  }
-}                      
-
-void renderPartition(std::vector<PartitionGraphicsItem> &items,
-                     const Profile &profile,
-                     const PartitionLayout &layout,
-                     int width, int height)
-{
-  if (layout.empty() || layout.back().empty()) {
-    return;
-  }
-  
-  double px_per_col = static_cast<double>(width-1) / layout.size();
-  double px_per_span = static_cast<double>(height-1) / layout.back().back().span_end;
-  
-  for (size_t col = 0; col < layout.size(); col++) {
-    for (size_t row = 0; row < layout[col].size(); row++) {
-      const PartitionLayoutItem &layout_item = layout[col][row];
-
-      if (layout_item.exclusive) {
-        continue;
-      }
-      
-      const ProfileNode &node = profile.node(layout_item.node_key);
-
-      PartitionGraphicsItem gfx_item;
-      gfx_item.color = colorFromString(node.name());
-
-      QPoint top_left(std::round(px_per_col*col),
-                      std::round(px_per_span*layout_item.span_start));
-      QPoint bottom_right(width, height);
-              
-      gfx_item.rect = QRect(top_left, bottom_right);      
-      items.push_back(gfx_item);
-    }
-  }
 }
 
 PartitionWidget::PartitionWidget(QWidget *parent)
@@ -220,22 +91,167 @@ void PartitionWidget::paintEvent(QPaintEvent *)
   }    
 
   const Profile &profile = db_->profile(active_key_.profileKey());
-  PartitionLayout layout;
-  layoutPartition(layout, profile);
-
-  std::vector<PartitionGraphicsItem> gfx_items;
-  renderPartition(gfx_items, profile, layout, width(), height());
-
-  painter.setPen(Qt::black);  
-  for (auto const &item : gfx_items) {
-    painter.setBrush(item.color);
-    painter.drawRect(item.rect.adjusted(0,0,-2,-2));
+  Layout layout = layoutProfile(profile);
+  current_layout_ = layout;
+  
+  if (layout.empty() || layout.back().empty()) {
+    return;
   }
+
+  QRectF data_rect(QPointF(0, layout.front().front().span_start),
+                   QPointF(layout.size(), layout.back().back().span_end));
+  QRectF win_rect(QPointF(0, 0),
+                  QPointF(width(), height()));
+  
+  QTransform win_from_data = getTransform(win_rect, data_rect);
+  renderLayout(painter, win_from_data, layout, profile);
 }
 
 void PartitionWidget::setActiveNode(int profile_key, int node_key)
 {
   active_key_ = DatabaseKey(profile_key, node_key);
   update();
+}
+
+PartitionWidget::Layout PartitionWidget::layoutProfile(const Profile &profile)
+{
+  Layout layout;
+  
+  const ProfileNode &root_node = profile.rootNode();
+  if (!root_node.isValid()) {
+    qWarning("Profile returned invalid root node.");
+    return layout;
+  }
+
+  if (root_node.data().empty()) {
+    return layout;
+  }
+
+  double time_scale = root_node.data().back().cumulative_inclusive_duration_ns;
+  
+  LayoutItem root_item;
+  root_item.node_key = root_node.nodeKey();
+  root_item.exclusive = false;
+  root_item.span_start = 0.0;
+  root_item.span_end = 1.0;
+  layout.emplace_back();
+  layout.back().push_back(root_item);
+
+  bool keep_going = root_node.hasChildren();
+
+  while (keep_going) {
+    // We going to stop unless we see some children.
+    keep_going = false;
+    
+    layout.emplace_back();
+    const std::vector<LayoutItem> &parents = layout[layout.size()-2];
+    std::vector<LayoutItem> &children = layout[layout.size()-1];
+    
+    double span_start = 0.0;
+    for (auto const &parent_item : parents) {      
+      const ProfileNode &parent_node = profile.node(parent_item.node_key);
+
+      // Add the carry-over exclusive item.
+      {
+        LayoutItem item;
+        item.node_key = parent_item.node_key;
+        item.exclusive = true;
+        item.span_start = span_start;
+        item.span_end = span_start + parent_node.data().back().cumulative_exclusive_duration_ns/time_scale;
+        children.push_back(item);
+        span_start = item.span_end;
+      }
+
+      // Don't add children for an exclusive item because they've already been added.
+      if (parent_item.exclusive) {
+        continue;
+      }
+      
+      for (int child_key : parent_node.childKeys()) {
+        const ProfileNode &child_node = profile.node(child_key);
+        
+        LayoutItem item;
+        item.node_key = child_key;
+        item.exclusive = false;
+        item.span_start = span_start;
+        item.span_end = span_start + child_node.data().back().cumulative_inclusive_duration_ns / time_scale;
+        children.push_back(item);
+        span_start = item.span_end;
+
+        keep_going |= child_node.hasChildren();
+      }
+
+      // if (span_start != parent_item.span_end) {
+      //   qWarning("Unexpected database inconsistency (1): %zu vs %zu", span_start, parent_item.span_end);
+      // }
+    }
+
+    // if (span_start != root_item.span_end) {
+    //   qWarning("Unexpected database inconsistency (2): %zu vs %zu", span_start, root_item.span_end);
+    // }
+  }
+
+  return layout;
+}
+
+// QRectF.toRect() rounds based on the height/width instead of the
+// bottom/right coordinate, which is not helpful for what we need here.
+static QRect roundRect(const QRectF &src)
+{
+  QPointF src_tl = src.topLeft();
+  QPointF src_br = src.bottomRight();
+  QPoint dst_tl(std::round(src_tl.x()), std::round(src_tl.y()));
+  QPoint dst_br(std::round(src_br.x()), std::round(src_br.y()));
+  return QRect(dst_tl, dst_br);
+}
+
+void PartitionWidget::renderLayout(QPainter &painter,
+                                   const QTransform &win_from_data,
+                                   const Layout &layout,
+                                   const Profile &profile)
+{
+  // Set painter to use a single-pixel black pen.
+  painter.setPen(Qt::black);  
+
+  for (size_t col = 0; col < layout.size(); col++) {
+    for (size_t row = 0; row < layout[col].size(); row++) {
+      const LayoutItem &layout_item = layout[col][row];
+
+      if (layout_item.exclusive) {
+         continue;
+      }
+      
+      const ProfileNode &node = profile.node(layout_item.node_key);
+      QColor color = colorFromString(node.name());
+
+      QPointF tl(col, layout_item.span_start);
+      QPointF br(layout.size(), layout_item.span_end);
+      QRectF data_rect(tl, br);
+      QRectF win_rect = win_from_data.mapRect(data_rect);
+
+      QRect int_rect = win_rect.toRect();
+      QRect int_rect2 = roundRect(win_rect);
+
+      painter.setBrush(color);
+      painter.drawRect(int_rect2.adjusted(0,0,-1,-1));
+    }
+  } 
+}
+
+QTransform PartitionWidget::getTransform(const QRectF &win_rect,
+                                         const QRectF &data_rect)
+{
+  qDebug() << win_rect << data_rect;
+
+  double sx = win_rect.width() / data_rect.width();
+  double sy = win_rect.height() / data_rect.height();
+
+  double tx = win_rect.topLeft().x() - sx*data_rect.topLeft().x();
+  double ty = win_rect.topLeft().y() - sy*data_rect.topLeft().y();
+  
+  QTransform win_from_data(sx, 0.0, 0.0,
+                           0.0, sy, 0.0,
+                           tx, ty, 1.0);
+  return win_from_data;
 }
 }  // namespace swri_profiler_tools
