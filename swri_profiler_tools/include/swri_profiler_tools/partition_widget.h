@@ -82,6 +82,8 @@ class PartitionWidget : public QWidget
 
   QTransform getTransform(const QRectF &win_rect,
                           const QRectF &data_rect);
+
+  QRectF dataRect(const Layout &layout) const;
   
  protected:
   void paintEvent(QPaintEvent *event);

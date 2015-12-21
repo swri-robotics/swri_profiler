@@ -98,13 +98,38 @@ void PartitionWidget::paintEvent(QPaintEvent *)
     return;
   }
 
-  QRectF data_rect(QPointF(0, layout.front().front().span_start),
-                   QPointF(layout.size(), layout.back().back().span_end));
-  QRectF win_rect(QPointF(0, 0),
-                  QPointF(width(), height()));
+  QRectF data_rect = dataRect(layout);
+  QRectF win_rect(QPointF(0, 0), QPointF(width(), height()));
   
   QTransform win_from_data = getTransform(win_rect, data_rect);
   renderLayout(painter, win_from_data, layout, profile);
+}
+
+QRectF PartitionWidget::dataRect(const Layout &layout) const
+{
+  QPointF tl(0, 0.0);
+  QPointF br(layout.size(), 1.0);
+  
+  // This is a brute force search, we can be more intelligent about it
+  // if necessary.
+  for (size_t col = 0; col < layout.size(); col++) {
+    for (size_t row = 0; row < layout[col].size(); row++) {
+      const LayoutItem &item = layout[col][row];
+      if (active_key_.nodeKey() == item.node_key) {
+
+        double rect_col = std::max(0.0, col-0.2);
+        const double span_size = item.span_end - item.span_start;
+        const double span_start = std::max(item.span_start - 0.1*span_size, 0.0);
+        const double span_end = std::min(item.span_end + 0.1*span_size, 1.0);
+
+        return QRectF(QPointF(rect_col, span_start),
+                      QPointF(layout.size(), span_end));
+      }
+    }
+  }
+
+  qWarning("Active node key was not found in layout");
+  return QRectF(QPointF(0, 0.0), QPointF(layout.size(), 1.0));
 }
 
 void PartitionWidget::setActiveNode(int profile_key, int node_key)
@@ -128,7 +153,7 @@ PartitionWidget::Layout PartitionWidget::layoutProfile(const Profile &profile)
   }
 
   double time_scale = root_node.data().back().cumulative_inclusive_duration_ns;
-  
+
   LayoutItem root_item;
   root_item.node_key = root_node.nodeKey();
   root_item.exclusive = false;
@@ -149,8 +174,8 @@ PartitionWidget::Layout PartitionWidget::layoutProfile(const Profile &profile)
     
     double span_start = 0.0;
     for (auto const &parent_item : parents) {      
-      const ProfileNode &parent_node = profile.node(parent_item.node_key);
-
+      const ProfileNode &parent_node = profile.node(parent_item.node_key);      
+      
       // Add the carry-over exclusive item.
       {
         LayoutItem item;
