@@ -31,6 +31,7 @@
 
 #include <QGraphicsView>
 #include <QVBoxLayout>
+#include <QMouseEvent>
 #include <QDebug>
 
 #include <swri_profiler_tools/util.h>
@@ -75,8 +76,7 @@ void PartitionWidget::setDatabase(ProfileDatabase *db)
 
   db_ = db;
 
-  update();
-
+  updateData();
   QObject::connect(db_, SIGNAL(dataAdded(int)),    this, SLOT(updateData()));
   QObject::connect(db_, SIGNAL(profileAdded(int)), this, SLOT(updateData()));
   QObject::connect(db_, SIGNAL(nodesAdded(int)),   this, SLOT(updateData()));
@@ -108,40 +108,39 @@ void PartitionWidget::paintEvent(QPaintEvent *)
     return;
   }
 
-  const Profile &profile = db_->profile(active_key_.profileKey());
 
   QRectF data_rect = view_animator_->currentValue().toRectF();
   QRectF win_rect(QPointF(0, 0), QPointF(width(), height()));  
-  QTransform win_from_data = getTransform(win_rect, data_rect);
-  renderLayout(painter, win_from_data, current_layout_, profile);
+  win_from_data_ = getTransform(win_rect, data_rect);
+
+  const Profile &profile = db_->profile(active_key_.profileKey());
+  renderLayout(painter, win_from_data_, current_layout_, profile);
 }
 
 QRectF PartitionWidget::dataRect(const Layout &layout) const
 {
-  QPointF tl(0, 0.0);
-  QPointF br(layout.size(), 1.0);
-  
-  // This is a brute force search, we can be more intelligent about it
-  // if necessary.
-  for (size_t col = 0; col < layout.size(); col++) {
-    for (size_t row = 0; row < layout[col].size(); row++) {
-      const LayoutItem &item = layout[col][row];
-      if (active_key_.nodeKey() == item.node_key) {
-        QRectF rect = item.rect;
-        
-        rect.setLeft(std::max(0.0, rect.left()-0.2));
-        rect.setRight(layout.size());
+  if (layout.empty()) {
+    return QRectF(0.0, 0.0, 1.0, 1.0);
+  }
 
-        double margin = 0.05 * rect.height();
-        rect.setTop(std::max(0.0, rect.top() - margin));
-        rect.setBottom(std::min(1.0, rect.bottom() + margin));
-        return rect;
-      }
+  double right = layout.back().rect.right();
+
+  for (auto const &item : layout) {
+    if (active_key_.nodeKey() == item.node_key && item.exclusive == false) {
+      QRectF rect = item.rect;
+        
+      rect.setLeft(std::max(0.0, rect.left()-0.2));
+      rect.setRight(right);
+        
+      double margin = 0.05 * rect.height();
+      rect.setTop(std::max(0.0, rect.top() - margin));
+      rect.setBottom(std::min(1.0, rect.bottom() + margin));
+      return rect;
     }
   }
 
   qWarning("Active node key was not found in layout");
-  return QRectF(QPointF(0, 0.0), QPointF(layout.size(), 1.0));
+  return QRectF(QPointF(0.0, 0.0), QPointF(right, 1.0));
 }
 
 void PartitionWidget::setActiveNode(int profile_key, int node_key)
@@ -173,7 +172,9 @@ void PartitionWidget::setActiveNode(int profile_key, int node_key)
   } else {
     view_animator_->setStartValue(data_rect);
     view_animator_->setEndValue(data_rect);
-  }    
+  }
+
+  emit activeNodeChanged(profile_key, node_key);
 }
 
 PartitionWidget::Layout PartitionWidget::layoutProfile(const Profile &profile)
@@ -197,19 +198,18 @@ PartitionWidget::Layout PartitionWidget::layoutProfile(const Profile &profile)
   root_item.node_key = root_node.nodeKey();
   root_item.exclusive = false;
   root_item.rect = QRectF(column, 0.0, 1, 1.0);
-  layout.emplace_back();
-  layout.back().push_back(root_item);
+  layout.push_back(root_item);
 
   bool keep_going = root_node.hasChildren();
 
+  std::vector<LayoutItem> parents;
+  std::vector<LayoutItem> children;
+  parents.push_back(root_item);
+  
   while (keep_going) {
     // We going to stop unless we see some children.
     keep_going = false;
-
     column++;
-    layout.emplace_back();
-    const std::vector<LayoutItem> &parents = layout[layout.size()-2];
-    std::vector<LayoutItem> &children = layout[layout.size()-1];
     
     double span_start = 0.0;
     for (auto const &parent_item : parents) {      
@@ -245,6 +245,10 @@ PartitionWidget::Layout PartitionWidget::layoutProfile(const Profile &profile)
         keep_going |= child_node.hasChildren();
       }
     }
+
+    layout.insert(layout.end(), children.begin(), children.end());
+    parents.swap(children);
+    children.clear();
   }
 
   return layout;
@@ -258,28 +262,24 @@ void PartitionWidget::renderLayout(QPainter &painter,
   // Set painter to use a single-pixel black pen.
   painter.setPen(Qt::black);  
 
-  for (size_t col = 0; col < layout.size(); col++) {
-    for (size_t row = 0; row < layout[col].size(); row++) {
-      const LayoutItem &layout_item = layout[col][row];
-
-      if (layout_item.exclusive) {
-         continue;
-      }
-      
-      const ProfileNode &node = profile.node(layout_item.node_key);
-      QColor color = colorFromString(node.name());
-
-      QRectF data_rect = layout_item.rect;
-      data_rect.setRight(layout.size());
-      QRectF win_rect = win_from_data.mapRect(data_rect);
-
-      QRect int_rect = win_rect.toRect();
-      QRect int_rect2 = roundRectF(win_rect);
-
-      painter.setBrush(color);
-      painter.drawRect(int_rect2.adjusted(0,0,-1,-1));
+  for (auto const &item : layout) {
+    if (item.exclusive) {
+      continue;
     }
-  } 
+      
+    const ProfileNode &node = profile.node(item.node_key);
+    QColor color = colorFromString(node.name());
+
+    QRectF data_rect = item.rect;
+    data_rect.setRight(layout.size());
+    QRectF win_rect = win_from_data.mapRect(data_rect);
+
+    QRect int_rect = win_rect.toRect();
+    QRect int_rect2 = roundRectF(win_rect);
+
+    painter.setBrush(color);
+    painter.drawRect(int_rect2.adjusted(0,0,-1,-1));
+  }
 }
 
 QTransform PartitionWidget::getTransform(const QRectF &win_rect,
@@ -295,4 +295,32 @@ QTransform PartitionWidget::getTransform(const QRectF &win_rect,
                            tx, ty, 1.0);
   return win_from_data;
 }
+
+int PartitionWidget::itemAtPoint(const QPointF &point) const
+{
+  for (size_t i = 0; i < current_layout_.size(); i++) {
+    auto const &item = current_layout_[i];
+    if (item.rect.contains(point)) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+void PartitionWidget::mousePressEvent(QMouseEvent *event)
+{
+}
+
+void PartitionWidget::mouseDoubleClickEvent(QMouseEvent *event)
+{
+  QTransform data_from_win = win_from_data_.inverted();
+  int index = itemAtPoint(data_from_win.map(event->posF()));
+
+  if (index < 0) {
+    return;
+  }
+
+  const LayoutItem &item = current_layout_[index];
+  setActiveNode(active_key_.profileKey(), item.node_key);
+}    
 }  // namespace swri_profiler_tools

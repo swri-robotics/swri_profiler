@@ -64,7 +64,7 @@ class PartitionWidget : public QWidget
     bool exclusive;
     QRectF rect;
   };
-  typedef std::vector<std::vector<LayoutItem> > Layout;
+  typedef std::vector<LayoutItem> Layout;
   
   ProfileDatabase *db_;
   DatabaseKey active_key_;
@@ -72,6 +72,7 @@ class PartitionWidget : public QWidget
   // Controls animation of the rect that defines the view area in the
   // data space.
   VariantAnimation *view_animator_;
+  QTransform win_from_data_;
   
   Layout current_layout_;
   Layout layoutProfile(const Profile &profile);
@@ -85,12 +86,16 @@ class PartitionWidget : public QWidget
                           const QRectF &data_rect);
 
   QRectF dataRect(const Layout &layout) const;
-
+                                             
+  int itemAtPoint(const QPointF &point) const;                                             
+                                             
  private Q_SLOTS:
   void updateData();
   
  protected:
   void paintEvent(QPaintEvent *event);
+  void mousePressEvent(QMouseEvent *event);
+  void mouseDoubleClickEvent(QMouseEvent *event);
 };  // class PartitionWidget  
 }  // namespace swri_profiler_tools
 #endif  // SWRI_PROFILER_TOOLS_PARTITION_WIDGET_H_
