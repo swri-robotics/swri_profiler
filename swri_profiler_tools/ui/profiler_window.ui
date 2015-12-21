@@ -15,6 +15,12 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
+    <property name="spacing">
+     <number>3</number>
+    </property>
+    <property name="margin">
+     <number>0</number>
+    </property>
     <item>
      <widget class="QSplitter" name="splitter">
       <property name="orientation">
@@ -22,6 +28,12 @@
       </property>
       <widget class="QWidget" name="layoutWidget">
        <layout class="QHBoxLayout" name="horizontalLayout">
+        <property name="spacing">
+         <number>3</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
         <item>
          <widget class="swri_profiler_tools::ProfileTreeWidget" name="profileTree" native="true">
           <property name="sizePolicy">
@@ -50,6 +62,22 @@
       <widget class="QGraphicsView" name="timeView"/>
      </widget>
     </item>
+    <item>
+     <widget class="swri_profiler_tools::TimelineWidget" name="timelineWidget" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="baseSize">
+       <size>
+        <width>0</width>
+        <height>0</height>
+       </size>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -58,7 +86,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>25</height>
+     <height>27</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -100,6 +128,12 @@
    <class>swri_profiler_tools::PartitionWidget</class>
    <extends>QWidget</extends>
    <header location="global">swri_profiler_tools/partition_widget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>swri_profiler_tools::TimelineWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">swri_profiler_tools/timeline_widget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

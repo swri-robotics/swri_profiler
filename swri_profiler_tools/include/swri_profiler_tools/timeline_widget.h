@@ -27,54 +27,45 @@
 // DAMAGE.
 //
 // *****************************************************************************
+#ifndef SWRI_PROFILER_TOOLS_TIMELINE_WIDGET_H_
+#define SWRI_PROFILER_TOOLS_TIMELINE_WIDGET_H_
 
-#include <swri_profiler_tools/profiler_window.h>
+#include <QWidget>
+#include <swri_profiler_tools/database_key.h>
 
 namespace swri_profiler_tools
 {
-ProfilerWindow::ProfilerWindow(ProfileDatabase *db)
-  :
-  QMainWindow(),
-  db_(db)
+class Profile;
+class ProfileDatabase;
+class TimelineWidget : public QWidget
 {
-  ui.setupUi(this);
+  Q_OBJECT;
 
-  QObject::connect(ui.action_NewWindow, SIGNAL(triggered(bool)),
-                   this, SIGNAL(createNewWindow()));
+ public:
+  TimelineWidget(QWidget *parent=0);
+  ~TimelineWidget();
 
-  connection_status_ = new QLabel("Not connected");
-  statusBar()->addPermanentWidget(connection_status_);
+  void setDatabase(ProfileDatabase *db);
 
-  ui.profileTree->setDatabase(db_);
-  ui.partitionWidget->setDatabase(db_);
-  ui.timelineWidget->setDatabase(db_);
+ public Q_SLOTS:
+  void setActiveNode(int profile_key, int node_key);
 
-  QObject::connect(ui.profileTree, SIGNAL(activeNodeChanged(int,int)),
-                   ui.partitionWidget, SLOT(setActiveNode(int,int)));
-  QObject::connect(ui.partitionWidget, SIGNAL(activeNodeChanged(int,int)),
-                   ui.profileTree, SLOT(setActiveNode(int,int)));
+   
+ protected:
+  QSize sizeHint() const;
+  void paintEvent(QPaintEvent *event);
+  
+ private:
+  ProfileDatabase *db_;  
+  DatabaseKey active_key_;
 
-  QObject::connect(ui.profileTree, SIGNAL(activeNodeChanged(int,int)),
-                   ui.timelineWidget, SLOT(setActiveNode(int,int)));
-}
+  int roi_start_time_;
+  int roi_end_time_;
+  int current_time_;
+  int highlight_time_;
 
-ProfilerWindow::~ProfilerWindow()
-{
-}
-
-void ProfilerWindow::closeEvent(QCloseEvent *event)
-{
-  QMainWindow::closeEvent(event);
-}
-
-void ProfilerWindow::rosConnected(bool connected, QString master_uri)
-{
-  if (connected) {    
-    statusBar()->showMessage("Connected to ROS Master " + master_uri);
-    connection_status_->setText(master_uri);
-  } else {
-    statusBar()->showMessage("Disconnected from ROS Master");
-    connection_status_->setText("Not connected");
-  }
-}
+ private Q_SLOTS:
+  void updateData();
+};  // class TimelineWidget
 }  // namespace swri_profiler_tools
+#endif  // SWRI_PROFILER_TOOLS_TIMELINE_WIDGET_H_

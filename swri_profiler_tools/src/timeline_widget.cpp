@@ -27,54 +27,55 @@
 // DAMAGE.
 //
 // *****************************************************************************
+#include <swri_profiler_tools/timeline_widget.h>
+#include <swri_profiler_tools/profile_database.h>
 
-#include <swri_profiler_tools/profiler_window.h>
+#include <QPainter>
 
 namespace swri_profiler_tools
 {
-ProfilerWindow::ProfilerWindow(ProfileDatabase *db)
+TimelineWidget::TimelineWidget(QWidget *parent)
   :
-  QMainWindow(),
-  db_(db)
-{
-  ui.setupUi(this);
-
-  QObject::connect(ui.action_NewWindow, SIGNAL(triggered(bool)),
-                   this, SIGNAL(createNewWindow()));
-
-  connection_status_ = new QLabel("Not connected");
-  statusBar()->addPermanentWidget(connection_status_);
-
-  ui.profileTree->setDatabase(db_);
-  ui.partitionWidget->setDatabase(db_);
-  ui.timelineWidget->setDatabase(db_);
-
-  QObject::connect(ui.profileTree, SIGNAL(activeNodeChanged(int,int)),
-                   ui.partitionWidget, SLOT(setActiveNode(int,int)));
-  QObject::connect(ui.partitionWidget, SIGNAL(activeNodeChanged(int,int)),
-                   ui.profileTree, SLOT(setActiveNode(int,int)));
-
-  QObject::connect(ui.profileTree, SIGNAL(activeNodeChanged(int,int)),
-                   ui.timelineWidget, SLOT(setActiveNode(int,int)));
-}
-
-ProfilerWindow::~ProfilerWindow()
+  QWidget(parent),
+  db_(NULL)
 {
 }
 
-void ProfilerWindow::closeEvent(QCloseEvent *event)
+TimelineWidget::~TimelineWidget()
 {
-  QMainWindow::closeEvent(event);
 }
 
-void ProfilerWindow::rosConnected(bool connected, QString master_uri)
+void TimelineWidget::setDatabase(ProfileDatabase *db)
 {
-  if (connected) {    
-    statusBar()->showMessage("Connected to ROS Master " + master_uri);
-    connection_status_->setText(master_uri);
-  } else {
-    statusBar()->showMessage("Disconnected from ROS Master");
-    connection_status_->setText("Not connected");
+  if (db_) {
+    // note(exjohnson): we can implement this later if desired, but
+    // currently no use case for it.
+    qWarning("PartitionWidget: Cannot change the profile database.");
+    return;
   }
+
+  db_ = db;
+  QObject::connect(db_, SIGNAL(dataAdded(int)), this, SLOT(updateData()));
+}
+
+QSize TimelineWidget::sizeHint() const
+{
+  return QSize(0, 45);
+}
+
+void TimelineWidget::paintEvent(QPaintEvent *)
+{
+  QPainter painter(this);
+
+  painter.setPen(Qt::NoPen);
+  painter.fillRect(0, 0, width(), height(), QColor(255, 255, 255));
+}
+
+void TimelineWidget::setActiveNode(int profile_key, int node_key)
+{
+}
+
+void TimelineWidget::updateData()
+{
 }
 }  // namespace swri_profiler_tools

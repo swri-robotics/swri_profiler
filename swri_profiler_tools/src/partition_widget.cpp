@@ -29,7 +29,7 @@
 // *****************************************************************************
 #include <swri_profiler_tools/partition_widget.h>
 
-#include <QGraphicsView>
+#include <QPainter>
 #include <QVBoxLayout>
 #include <QToolTip>
 #include <QHelpEvent>
