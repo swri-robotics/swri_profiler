@@ -39,8 +39,7 @@
 namespace swri_profiler_tools
 {
 enum ProfileTreeTypes {
-  ProfileType = QTreeWidgetItem::UserType,
-  NodeType
+  ProfileNodeType = QTreeWidgetItem::UserType,
 };
 
 enum ProfileTreeRoles {
@@ -130,13 +129,15 @@ void ProfileTreeWidget::addProfile(int profile_key)
     return;
   }
   
-  QTreeWidgetItem *item = new QTreeWidgetItem(ProfileType);
+  QTreeWidgetItem *item = new QTreeWidgetItem(ProfileNodeType);
 
+  
+  
   item->setText(0, profile.name());    
   item->setData(0, ProfileKeyRole, profile_key);
-  item->setData(0, NodeKeyRole, -1);
+  item->setData(0, NodeKeyRole, profile.rootKey());
   tree_widget_->addTopLevelItem(item);
-  items_[DatabaseKey(profile.profileKey())] = item;
+  items_[DatabaseKey(profile.profileKey(), profile.rootKey())] = item;
 
   for (auto child_key : profile.rootNode().childKeys()) {
     addNode(item, profile, child_key);
@@ -162,7 +163,7 @@ void ProfileTreeWidget::addNode(QTreeWidgetItem *parent,
     return;
   }
   
-  QTreeWidgetItem *item = new QTreeWidgetItem(NodeType);
+  QTreeWidgetItem *item = new QTreeWidgetItem(ProfileNodeType);
   item->setText(0, node.name());
   item->setData(0, ProfileKeyRole, profile.profileKey());
   item->setData(0, NodeKeyRole, node.nodeKey());
@@ -192,13 +193,10 @@ void ProfileTreeWidget::handleTreeContextMenuRequest(const QPoint &pos)
 
   if (!item) {
     qWarning("No item under mouse");
-  } else if (item->type() == ProfileType) {
-    int profile_key = item->data(0, ProfileKeyRole).toInt();
-    qWarning("profile %d", profile_key);
-  } else if (item->type() == NodeType) {
+  } else if (item->type() == ProfileNodeType) {
     int profile_key = item->data(0, ProfileKeyRole).toInt();
     int node_key = item->data(0, NodeKeyRole).toInt();
-    qWarning("node %d/%d", profile_key, node_key);    
+    qWarning("node %d--%d", profile_key, node_key);    
   } else {
     qWarning("Unknown item type: %d", item->type());
   }    
@@ -206,26 +204,24 @@ void ProfileTreeWidget::handleTreeContextMenuRequest(const QPoint &pos)
 
 void ProfileTreeWidget::handleItemActivated(QTreeWidgetItem *item, int column)
 {
-  DatabaseKey new_key(item->data(0, ProfileKeyRole).toInt(),
-                      item->data(0, NodeKeyRole).toInt());
-
-  if (active_key_ != new_key) {
-    markItemInactive(active_key_);
-    active_key_ = new_key;
-    markItemActive(active_key_);    
-    emit activeNodeChanged(active_key_.profileKey(),
-                           active_key_.isProfile() ? 0 : active_key_.nodeKey());
-  }
+  if (item->type() == ProfileNodeType) {
+    int profile_key = item->data(0, ProfileKeyRole).toInt();
+    int node_key = item->data(0, NodeKeyRole).toInt();
+    setActiveNode(profile_key, node_key);
+  }  
 }
 
 QString ProfileTreeWidget::nameForKey(const DatabaseKey &key) const
 {
-  if (key.isProfile()) {
-    return db_->profile(key.profileKey()).name();
-  } else if (key.isNode()) {
-    return db_->profile(key.profileKey()).node(key.nodeKey()).name();
-  } else {
+  if (!key.isValid()) {
     return "<INVALID KEY>";
+  }
+
+  const Profile &profile = db_->profile(key.profileKey());
+  if (key.nodeKey() == profile.rootKey()) {
+    return profile.name();
+  } else {
+    return profile.node(key.nodeKey()).name();
   }
 }
 
@@ -245,5 +241,18 @@ void ProfileTreeWidget::markItemInactive(const DatabaseKey &key)
   }
 
   items_.at(key)->setText(0, nameForKey(key));
+}
+
+void ProfileTreeWidget::setActiveNode(int profile_key, int node_key)
+{
+  const DatabaseKey new_key(profile_key, node_key);
+  if (new_key == active_key_) {
+    return;
+  }
+  
+  markItemInactive(active_key_);
+  active_key_ = new_key;
+  markItemActive(active_key_);    
+  emit activeNodeChanged(profile_key, node_key);
 }
 }  // namespace swri_profiler_tools

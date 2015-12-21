@@ -64,6 +64,9 @@ class ProfileTreeWidget : public QWidget
 
  Q_SIGNALS:
   void activeNodeChanged(int profile_key, int node_key);
+
+ public Q_SLOTS:
+  void setActiveNode(int profile_key, int node_key);
                                        
  private Q_SLOTS:
   void handleProfileAdded(int profile_key);

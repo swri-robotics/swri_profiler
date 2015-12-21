@@ -41,12 +41,10 @@ struct DatabaseKey
 
  public:
   DatabaseKey() : profile_key_(-1), node_key_(-1) {}
-  DatabaseKey(int profile_key, int node_key=-1)
+  DatabaseKey(int profile_key, int node_key)
     : profile_key_(profile_key), node_key_(node_key) {}
 
-  bool isValid() const { return profile_key_ >= 0; }
-  bool isProfile() const { return profile_key_ >= 0 && node_key_ < 0; }
-  bool isNode() const { return profile_key_ >= 0 && node_key_ >= 0; }
+  bool isValid() const { return profile_key_ >= 0 && node_key_ >= 0; }
 
   int profileKey() const { return profile_key_; }
   int nodeKey() const { return node_key_; }
@@ -81,7 +79,7 @@ template <>
 struct hash<swri_profiler_tools::DatabaseKey> {
   size_t operator () (const swri_profiler_tools::DatabaseKey &key) const
   {
-    // This should be fine hash function because it's very unlikely
+    // This should be a fine hash function because it's very unlikely
     // someone would be working with hundreds of profiles at once.
     return key.profileKey()*1000 + key.nodeKey();
   }

@@ -55,6 +55,7 @@ class PartitionWidget : public QWidget
  Q_SIGNALS:
   void activeNodeChanged(int profile_key, int node_key);
 
+  
  private:
   // This structure stores information about how profile nodes are
   // laid out.
