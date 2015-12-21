@@ -35,6 +35,10 @@
 #include <QRectF>
 #include <swri_profiler_tools/database_key.h>
 
+QT_BEGIN_NAMESPACE
+class QHelpEvent;
+QT_END_NAMESPACE
+
 namespace swri_profiler_tools
 {
 class Profile;
@@ -94,6 +98,8 @@ class PartitionWidget : public QWidget
   void updateData();
   
  protected:
+  bool event(QEvent *event);
+  void toolTipEvent(QHelpEvent *event);
   void paintEvent(QPaintEvent *event);
   void mousePressEvent(QMouseEvent *event);
   void mouseDoubleClickEvent(QMouseEvent *event);

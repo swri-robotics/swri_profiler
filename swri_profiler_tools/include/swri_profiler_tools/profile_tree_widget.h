@@ -75,7 +75,6 @@ class ProfileTreeWidget : public QWidget
   void handleItemActivated(QTreeWidgetItem *item, int column);
   void handleTreeContextMenuRequest(const QPoint &pos);
 
-
  private:
   void synchronizeWidget();
   void addProfile(int profile_key);

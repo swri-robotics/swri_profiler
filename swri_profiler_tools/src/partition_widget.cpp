@@ -31,6 +31,8 @@
 
 #include <QGraphicsView>
 #include <QVBoxLayout>
+#include <QToolTip>
+#include <QHelpEvent>
 #include <QMouseEvent>
 #include <QDebug>
 
@@ -273,12 +275,10 @@ void PartitionWidget::renderLayout(QPainter &painter,
     QRectF data_rect = item.rect;
     data_rect.setRight(layout.size());
     QRectF win_rect = win_from_data.mapRect(data_rect);
-
-    QRect int_rect = win_rect.toRect();
-    QRect int_rect2 = roundRectF(win_rect);
+    QRect int_rect = roundRectF(win_rect);
 
     painter.setBrush(color);
-    painter.drawRect(int_rect2.adjusted(0,0,-1,-1));
+    painter.drawRect(int_rect.adjusted(0,0,-1,-1));
   }
 }
 
@@ -305,6 +305,44 @@ int PartitionWidget::itemAtPoint(const QPointF &point) const
     }
   }
   return -1;
+}
+
+bool PartitionWidget::event(QEvent *event)
+{
+  if (event->type() == QEvent::ToolTip) {
+    toolTipEvent(static_cast<QHelpEvent*>(event));
+    event->accept();
+    return true;
+  }
+  return QWidget::event(event);
+}
+
+void PartitionWidget::toolTipEvent(QHelpEvent *event)
+{
+  QTransform data_from_win = win_from_data_.inverted();
+  int index = itemAtPoint(data_from_win.map(QPointF(event->pos())));
+
+  if (index < 0) {
+    QToolTip::hideText();
+    return;
+  }
+
+  const Profile &profile = db_->profile(active_key_.profileKey());
+  const LayoutItem &item = current_layout_[index];
+
+  QString tool_tip;
+  if (item.node_key == profile.rootKey()) {
+    tool_tip = profile.name();
+  } else {  
+    tool_tip = profile.node(item.node_key).path();
+    if (item.exclusive) {
+      tool_tip += " [exclusive]";
+    }
+  }
+  
+  QRectF win_rect = win_from_data_.mapRect(item.rect);
+  QRect int_rect = roundRectF(win_rect);  
+  QToolTip::showText(event->globalPos(), tool_tip, this, int_rect);  
 }
 
 void PartitionWidget::mousePressEvent(QMouseEvent *event)
