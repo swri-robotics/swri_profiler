@@ -127,15 +127,15 @@ QRectF PartitionWidget::dataRect(const Layout &layout) const
     for (size_t row = 0; row < layout[col].size(); row++) {
       const LayoutItem &item = layout[col][row];
       if (active_key_.nodeKey() == item.node_key) {
-        const double rect_col = std::max(0.0, col-0.2);
+        QRectF rect = item.rect;
+        
+        rect.setLeft(std::max(0.0, rect.left()-0.2));
+        rect.setRight(layout.size());
 
-        const double margin = 0.05;
-        const double span_size = item.span_end - item.span_start;
-        const double span_start = std::max(item.span_start - margin*span_size, 0.0);
-        const double span_end = std::min(item.span_end + margin*span_size, 1.0);
-
-        return QRectF(QPointF(rect_col, span_start),
-                      QPointF(layout.size(), span_end));
+        double margin = 0.05 * rect.height();
+        rect.setTop(std::max(0.0, rect.top() - margin));
+        rect.setBottom(std::min(1.0, rect.bottom() + margin));
+        return rect;
       }
     }
   }
@@ -192,11 +192,11 @@ PartitionWidget::Layout PartitionWidget::layoutProfile(const Profile &profile)
 
   double time_scale = root_node.data().back().cumulative_inclusive_duration_ns;
 
+  int column = 0;
   LayoutItem root_item;
   root_item.node_key = root_node.nodeKey();
   root_item.exclusive = false;
-  root_item.span_start = 0.0;
-  root_item.span_end = 1.0;
+  root_item.rect = QRectF(column, 0.0, 1, 1.0);
   layout.emplace_back();
   layout.back().push_back(root_item);
 
@@ -205,7 +205,8 @@ PartitionWidget::Layout PartitionWidget::layoutProfile(const Profile &profile)
   while (keep_going) {
     // We going to stop unless we see some children.
     keep_going = false;
-    
+
+    column++;
     layout.emplace_back();
     const std::vector<LayoutItem> &parents = layout[layout.size()-2];
     std::vector<LayoutItem> &children = layout[layout.size()-1];
@@ -216,13 +217,13 @@ PartitionWidget::Layout PartitionWidget::layoutProfile(const Profile &profile)
       
       // Add the carry-over exclusive item.
       {
+        double height =  parent_node.data().back().cumulative_exclusive_duration_ns/time_scale;
         LayoutItem item;
         item.node_key = parent_item.node_key;
         item.exclusive = true;
-        item.span_start = span_start;
-        item.span_end = span_start + parent_node.data().back().cumulative_exclusive_duration_ns/time_scale;
+        item.rect = QRectF(column, span_start, 1, height);
         children.push_back(item);
-        span_start = item.span_end;
+        span_start = item.rect.bottom();
       }
 
       // Don't add children for an exclusive item because they've already been added.
@@ -232,14 +233,14 @@ PartitionWidget::Layout PartitionWidget::layoutProfile(const Profile &profile)
       
       for (int child_key : parent_node.childKeys()) {
         const ProfileNode &child_node = profile.node(child_key);
+        double height = child_node.data().back().cumulative_inclusive_duration_ns / time_scale;
         
         LayoutItem item;
         item.node_key = child_key;
         item.exclusive = false;
-        item.span_start = span_start;
-        item.span_end = span_start + child_node.data().back().cumulative_inclusive_duration_ns / time_scale;
+        item.rect = QRectF(column, span_start, 1, height);
         children.push_back(item);
-        span_start = item.span_end;
+        span_start = item.rect.bottom();
 
         keep_going |= child_node.hasChildren();
       }
@@ -248,7 +249,6 @@ PartitionWidget::Layout PartitionWidget::layoutProfile(const Profile &profile)
 
   return layout;
 }
-
 
 void PartitionWidget::renderLayout(QPainter &painter,
                                    const QTransform &win_from_data,
@@ -269,9 +269,8 @@ void PartitionWidget::renderLayout(QPainter &painter,
       const ProfileNode &node = profile.node(layout_item.node_key);
       QColor color = colorFromString(node.name());
 
-      QPointF tl(col, layout_item.span_start);
-      QPointF br(layout.size(), layout_item.span_end);
-      QRectF data_rect(tl, br);
+      QRectF data_rect = layout_item.rect;
+      data_rect.setRight(layout.size());
       QRectF win_rect = win_from_data.mapRect(data_rect);
 
       QRect int_rect = win_rect.toRect();

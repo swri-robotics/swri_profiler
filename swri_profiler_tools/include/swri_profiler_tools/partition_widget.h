@@ -62,8 +62,7 @@ class PartitionWidget : public QWidget
   {
     int node_key;
     bool exclusive;
-    double span_start;
-    double span_end;
+    QRectF rect;
   };
   typedef std::vector<std::vector<LayoutItem> > Layout;
   
