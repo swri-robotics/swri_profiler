@@ -50,6 +50,7 @@ set(MOC_HEADER_FILES
   include/swri_profiler_tools/profile.h
   include/swri_profiler_tools/profile_tree_widget.h
   include/swri_profiler_tools/partition_widget.h
+  include/swri_profiler_tools/variant_animation.h
   )
 
 set(SRC_FILES

@@ -27,25 +27,24 @@
 // DAMAGE.
 //
 // *****************************************************************************
+#ifndef SWRI_PROFILER_TOOLS_VARIANT_ANIMATION_H_
+#define SWRI_PROFILER_TOOLS_VARIANT_ANIMATION_H_
 
-#include <cmath>
-#include <QString>
-#include <QRect>
+#include <QVariantAnimation>
 
 namespace swri_profiler_tools
 {
-// Normalizes a path into our canonical form.  The canonical form is
-// either an empty string, or has a leading slash, no final slash, and
-// no adjacent slashes.  Note that a node's name is not a canonical
-// form (and that's correct because it is not a path).
-QString normalizeNodePath(const QString &path);
-
-// QRectF.toRect() rounds the top left coordinate and width/height
-// instead of the top left and bottom right coordinates.  This utility
-// provides the latter type of rounding which is often important for
-// preserving adjacency between rectangles.
-inline QRect roundRectF(const QRectF &src)
+// QVariantAnimation has a pure virtual method even though it is
+// perfectly useful directly.  This class just provides an empty
+// implementation.  See QTBUG-13230.
+class VariantAnimation : public QVariantAnimation
 {
-  return QRect(src.topLeft().toPoint(), src.bottomRight().toPoint());
-}
+  Q_OBJECT;
+ public:
+  VariantAnimation(QObject *parent=0) : QVariantAnimation(parent) {}
+  
+ protected:
+  virtual void updateCurrentValue(const QVariant &) {}  
+};
 }  // namespace swri_profiler_tools
+#endif  // SWRI_PROFILER_TOOLS_VARIANT_ANIMATION_H_

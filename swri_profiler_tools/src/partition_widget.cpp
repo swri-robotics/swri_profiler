@@ -33,7 +33,9 @@
 #include <QVBoxLayout>
 #include <QDebug>
 
+#include <swri_profiler_tools/util.h>
 #include <swri_profiler_tools/profile_database.h>
+#include <swri_profiler_tools/variant_animation.h>
 
 namespace swri_profiler_tools
 {
@@ -52,6 +54,10 @@ PartitionWidget::PartitionWidget(QWidget *parent)
   QWidget(parent),
   db_(NULL)
 {
+  view_animator_ = new VariantAnimation(this);
+  view_animator_->setEasingCurve(QEasingCurve::InOutCubic);
+  QObject::connect(view_animator_, SIGNAL(valueChanged(const QVariant &)),
+                   this, SLOT(update()));
 }
 
 PartitionWidget::~PartitionWidget()
@@ -71,12 +77,24 @@ void PartitionWidget::setDatabase(ProfileDatabase *db)
 
   update();
 
-  QObject::connect(db_, SIGNAL(dataAdded(int)),
-                   this, SLOT(update()));
-  QObject::connect(db_, SIGNAL(profileAdded(int)),
-                   this, SLOT(update()));
-  QObject::connect(db_, SIGNAL(nodesAdded(int)),
-                   this, SLOT(update()));
+  QObject::connect(db_, SIGNAL(dataAdded(int)),    this, SLOT(updateData()));
+  QObject::connect(db_, SIGNAL(profileAdded(int)), this, SLOT(updateData()));
+  QObject::connect(db_, SIGNAL(nodesAdded(int)),   this, SLOT(updateData()));
+}
+
+void PartitionWidget::updateData()
+{
+  if (!active_key_.isValid()) {
+    return;
+  }    
+
+  const Profile &profile = db_->profile(active_key_.profileKey());
+  Layout layout = layoutProfile(profile);
+  QRectF data_rect = dataRect(layout);
+  view_animator_->setEndValue(data_rect);
+  current_layout_ = layout;
+
+  update();
 }
 
 void PartitionWidget::paintEvent(QPaintEvent *)
@@ -85,24 +103,17 @@ void PartitionWidget::paintEvent(QPaintEvent *)
 
   painter.setPen(Qt::NoPen);
   painter.fillRect(0, 0, width(), height(), QColor(255, 255, 255));
-  
-  if (!active_key_.isValid()) {
-    return;
-  }    
-
-  const Profile &profile = db_->profile(active_key_.profileKey());
-  Layout layout = layoutProfile(profile);
-  current_layout_ = layout;
-  
-  if (layout.empty() || layout.back().empty()) {
+    
+  if (current_layout_.empty()) {
     return;
   }
 
-  QRectF data_rect = dataRect(layout);
-  QRectF win_rect(QPointF(0, 0), QPointF(width(), height()));
-  
+  const Profile &profile = db_->profile(active_key_.profileKey());
+
+  QRectF data_rect = view_animator_->currentValue().toRectF();
+  QRectF win_rect(QPointF(0, 0), QPointF(width(), height()));  
   QTransform win_from_data = getTransform(win_rect, data_rect);
-  renderLayout(painter, win_from_data, layout, profile);
+  renderLayout(painter, win_from_data, current_layout_, profile);
 }
 
 QRectF PartitionWidget::dataRect(const Layout &layout) const
@@ -116,11 +127,12 @@ QRectF PartitionWidget::dataRect(const Layout &layout) const
     for (size_t row = 0; row < layout[col].size(); row++) {
       const LayoutItem &item = layout[col][row];
       if (active_key_.nodeKey() == item.node_key) {
+        const double rect_col = std::max(0.0, col-0.2);
 
-        double rect_col = std::max(0.0, col-0.2);
+        const double margin = 0.05;
         const double span_size = item.span_end - item.span_start;
-        const double span_start = std::max(item.span_start - 0.1*span_size, 0.0);
-        const double span_end = std::min(item.span_end + 0.1*span_size, 1.0);
+        const double span_start = std::max(item.span_start - margin*span_size, 0.0);
+        const double span_end = std::min(item.span_end + margin*span_size, 1.0);
 
         return QRectF(QPointF(rect_col, span_start),
                       QPointF(layout.size(), span_end));
@@ -134,8 +146,34 @@ QRectF PartitionWidget::dataRect(const Layout &layout) const
 
 void PartitionWidget::setActiveNode(int profile_key, int node_key)
 {
-  active_key_ = DatabaseKey(profile_key, node_key);
-  update();
+  const DatabaseKey new_key(profile_key, node_key);
+
+  if (new_key == active_key_) {
+    return;
+  }
+
+  bool first = true;
+  if (active_key_.isValid()) {
+    first = false;
+  }
+    
+  active_key_ = new_key;
+  
+  const Profile &profile = db_->profile(active_key_.profileKey());
+  Layout layout = layoutProfile(profile);
+  QRectF data_rect = dataRect(layout);
+  current_layout_ = layout;
+
+  if (!first) {
+    view_animator_->stop();
+    view_animator_->setStartValue(view_animator_->endValue());
+    view_animator_->setEndValue(data_rect);
+    view_animator_->setDuration(500);
+    view_animator_->start();
+  } else {
+    view_animator_->setStartValue(data_rect);
+    view_animator_->setEndValue(data_rect);
+  }    
 }
 
 PartitionWidget::Layout PartitionWidget::layoutProfile(const Profile &profile)
@@ -205,30 +243,12 @@ PartitionWidget::Layout PartitionWidget::layoutProfile(const Profile &profile)
 
         keep_going |= child_node.hasChildren();
       }
-
-      // if (span_start != parent_item.span_end) {
-      //   qWarning("Unexpected database inconsistency (1): %zu vs %zu", span_start, parent_item.span_end);
-      // }
     }
-
-    // if (span_start != root_item.span_end) {
-    //   qWarning("Unexpected database inconsistency (2): %zu vs %zu", span_start, root_item.span_end);
-    // }
   }
 
   return layout;
 }
 
-// QRectF.toRect() rounds based on the height/width instead of the
-// bottom/right coordinate, which is not helpful for what we need here.
-static QRect roundRect(const QRectF &src)
-{
-  QPointF src_tl = src.topLeft();
-  QPointF src_br = src.bottomRight();
-  QPoint dst_tl(std::round(src_tl.x()), std::round(src_tl.y()));
-  QPoint dst_br(std::round(src_br.x()), std::round(src_br.y()));
-  return QRect(dst_tl, dst_br);
-}
 
 void PartitionWidget::renderLayout(QPainter &painter,
                                    const QTransform &win_from_data,
@@ -255,7 +275,7 @@ void PartitionWidget::renderLayout(QPainter &painter,
       QRectF win_rect = win_from_data.mapRect(data_rect);
 
       QRect int_rect = win_rect.toRect();
-      QRect int_rect2 = roundRect(win_rect);
+      QRect int_rect2 = roundRectF(win_rect);
 
       painter.setBrush(color);
       painter.drawRect(int_rect2.adjusted(0,0,-1,-1));
@@ -266,11 +286,8 @@ void PartitionWidget::renderLayout(QPainter &painter,
 QTransform PartitionWidget::getTransform(const QRectF &win_rect,
                                          const QRectF &data_rect)
 {
-  qDebug() << win_rect << data_rect;
-
   double sx = win_rect.width() / data_rect.width();
   double sy = win_rect.height() / data_rect.height();
-
   double tx = win_rect.topLeft().x() - sx*data_rect.topLeft().x();
   double ty = win_rect.topLeft().y() - sy*data_rect.topLeft().y();
   

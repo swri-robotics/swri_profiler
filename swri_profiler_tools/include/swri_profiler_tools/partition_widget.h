@@ -35,13 +35,11 @@
 #include <QRectF>
 #include <swri_profiler_tools/database_key.h>
 
-QT_BEGIN_NAMESPACE
-QT_END_NAMESPACE
-
 namespace swri_profiler_tools
 {
 class Profile;
 class ProfileDatabase;
+class VariantAnimation;
 class PartitionWidget : public QWidget
 {
   Q_OBJECT;
@@ -72,6 +70,10 @@ class PartitionWidget : public QWidget
   ProfileDatabase *db_;
   DatabaseKey active_key_;
 
+  // Controls animation of the rect that defines the view area in the
+  // data space.
+  VariantAnimation *view_animator_;
+  
   Layout current_layout_;
   Layout layoutProfile(const Profile &profile);
 
@@ -84,6 +86,9 @@ class PartitionWidget : public QWidget
                           const QRectF &data_rect);
 
   QRectF dataRect(const Layout &layout) const;
+
+ private Q_SLOTS:
+  void updateData();
   
  protected:
   void paintEvent(QPaintEvent *event);
