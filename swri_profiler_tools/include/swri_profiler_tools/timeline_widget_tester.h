@@ -27,50 +27,42 @@
 // DAMAGE.
 //
 // *****************************************************************************
+#ifndef SWRI_PROFILER_TOOLS_TIMELINE_WIDGET_TESTER_H_
+#define SWRI_PROFILER_TOOLS_TIMELINE_WIDGET_TESTER_H_
 
-#include <swri_profiler_tools/profiler_window.h>
+#include <QDialog>
+#include "ui_timeline_widget_tester.h"
 
 namespace swri_profiler_tools
 {
-ProfilerWindow::ProfilerWindow(ProfileDatabase *db)
-  :
-  QMainWindow(),
-  db_(db)
+class TimelineWidgetTester : public QDialog
 {
-  ui.setupUi(this);
+  Q_OBJECT;
 
-  QObject::connect(ui.action_NewWindow, SIGNAL(triggered(bool)),
-                   this, SIGNAL(createNewWindow()));
+ public:
+  TimelineWidgetTester(QWidget *parent=0);
+  ~TimelineWidgetTester();    
 
-  connection_status_ = new QLabel("Not connected");
-  statusBar()->addPermanentWidget(connection_status_);
+ private Q_SLOTS:
+  void uiMaximumChanged(int idx);
+  void wiMaximumChanged(size_t idx);
 
-  ui.profileTree->setDatabase(db_);
-  ui.partitionWidget->setDatabase(db_);
+  void uiResolutionChanged(double resolution);
+  void wiResolutionChanged(double resolution);  
+  
+  void uiCurrentChanged(int idx);
+  void wiCurrentChanged(size_t idx);
 
-  QObject::connect(ui.profileTree, SIGNAL(activeNodeChanged(int,int)),
-                   ui.partitionWidget, SLOT(setActiveNode(int,int)));
-  QObject::connect(ui.partitionWidget, SIGNAL(activeNodeChanged(int,int)),
-                   ui.profileTree, SLOT(setActiveNode(int,int)));
-}
+  void uiHoverChanged();
+  void wiHoverChanged(bool active, size_t idx);
 
-ProfilerWindow::~ProfilerWindow()
-{
-}
+  void uiRoiChanged();
+  void wiRoiChanged(size_t min, size_t max);
+  
+ private:
+  Ui::TimelineWidgetTester ui;
 
-void ProfilerWindow::closeEvent(QCloseEvent *event)
-{
-  QMainWindow::closeEvent(event);
-}
-
-void ProfilerWindow::rosConnected(bool connected, QString master_uri)
-{
-  if (connected) {    
-    statusBar()->showMessage("Connected to ROS Master " + master_uri);
-    connection_status_->setText(master_uri);
-  } else {
-    statusBar()->showMessage("Disconnected from ROS Master");
-    connection_status_->setText("Not connected");
-  }
-}
+  void updateOutputs();
+};  // TimelineWidgetTester
 }  // namespace swri_profiler_tools
+#endif  // SWRI_PROFILER_TOOLS_TIMELINE_WIDGET_TESTER_H_

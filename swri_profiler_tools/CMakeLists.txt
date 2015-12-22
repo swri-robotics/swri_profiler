@@ -55,7 +55,6 @@ set(MOC_HEADER_FILES
   )
 
 set(SRC_FILES
-  src/main.cpp
   src/register_meta_types.cpp
   src/profiler_window.cpp
   src/profiler_master.cpp
@@ -75,12 +74,30 @@ qt4_add_resources(RCC_SRCS resources/images.qrc)
 qt4_wrap_ui(SRC_FILES ${UI_FILES})
 qt4_wrap_cpp(SRC_FILES ${MOC_HEADER_FILES})
 
-add_executable(profiler ${SRC_FILES} ${RCC_SRCS})
+add_executable(profiler 
+  src/main.cpp
+  ${SRC_FILES} 
+  ${RCC_SRCS})
 target_link_libraries(profiler
   ${QT_LIBRARIES}
   ${catkin_LIBRARIES})
 
 add_dependencies(profiler swri_profiler_msgs_generate_messages_cpp)
+
+
+qt4_wrap_ui(TIMELINE_TESTER_SRC_FILES  
+  ui/timeline_widget_tester.ui)  
+qt4_wrap_cpp(TIMELINE_TESTER_SRC_FILES
+  include/swri_profiler_tools/timeline_widget_tester.h)
+add_executable(timeline_widget_tester
+  src/timeline_widget_tester.cpp
+  ${TIMELINE_TESTER_SRC_FILES}
+  ${SRC_FILES} 
+  ${RCC_SRCS})
+target_link_libraries(timeline_widget_tester
+  ${QT_LIBRARIES}
+  ${catkin_LIBRARIES})
+
 
 ### Install Test Node and Headers ###
 

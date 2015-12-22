@@ -35,8 +35,6 @@
 
 namespace swri_profiler_tools
 {
-class Profile;
-class ProfileDatabase;
 class TimelineWidget : public QWidget
 {
   Q_OBJECT;
@@ -45,27 +43,47 @@ class TimelineWidget : public QWidget
   TimelineWidget(QWidget *parent=0);
   ~TimelineWidget();
 
-  void setDatabase(ProfileDatabase *db);
-
+  size_t maximum() const { return max_value_; }
+  double resolution() const { return resolution_; }
+  size_t current() const { return current_index_; }
+  bool hoverActive() const { return hover_active_; }
+  size_t hoverIndex() const { return hover_index_; }    
+  size_t roiMinimum() const { return roi_min_; }
+  size_t roiMaximum() const { return roi_max_; }
+                   
  public Q_SLOTS:
-  void setActiveNode(int profile_key, int node_key);
+  void setMaximum(size_t max);
+  void setResolution(double resolution);
 
-   
+  void setCurrent(size_t index);
+  void setHover(bool active, size_t index);
+  void setRoi(size_t min, size_t max);
+
+ Q_SIGNALS:
+  void maximumChanged(size_t max);
+  void resolutionChanged(double resolution);
+  void currentChanged(size_t index);
+  void hoverChanged(bool active, size_t index);
+  void roiChanged(size_t min, size_t max);
+  
  protected:
   QSize sizeHint() const;
   void paintEvent(QPaintEvent *event);
+  void enterEvent(QEvent *event);
+  void leaveEvent(QEvent *event);
+  void mouseMoveEvent(QMouseEvent *event);
+  void mousePressEvent(QMouseEvent *event);
   
  private:
-  ProfileDatabase *db_;  
-  DatabaseKey active_key_;
+  size_t max_value_;
+  double resolution_;
 
-  int roi_start_time_;
-  int roi_end_time_;
-  int current_time_;
-  int highlight_time_;
+  size_t current_index_;
+  size_t hover_active_;
+  size_t hover_index_;
 
- private Q_SLOTS:
-  void updateData();
+  size_t roi_min_;
+  size_t roi_max_;
 };  // class TimelineWidget
 }  // namespace swri_profiler_tools
 #endif  // SWRI_PROFILER_TOOLS_TIMELINE_WIDGET_H_
