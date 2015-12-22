@@ -1,4 +1,4 @@
-// *****************************************************************************
+/// *****************************************************************************
 //
 // Copyright (c) 2015, Southwest Research Institute® (SwRI®)
 // All rights reserved.
@@ -27,63 +27,49 @@
 // DAMAGE.
 //
 // *****************************************************************************
-#ifndef SWRI_PROFILER_TOOLS_TIMELINE_WIDGET_H_
-#define SWRI_PROFILER_TOOLS_TIMELINE_WIDGET_H_
+#ifndef SWRI_PROFILER_TOOLS_TIME_PLOT_WIDGET_H_
+#define SWRI_PROFILER_TOOLS_TIME_PLOT_WIDGET_H_
 
 #include <QWidget>
-#include <swri_profiler_tools/database_key.h>
+
+QT_BEGIN_NAMESPACE
+class QHelpEvent;
+QT_END_NAMESPACE
 
 namespace swri_profiler_tools
 {
-class TimelineWidget : public QWidget
+class Profile;
+class ProfileDatabase;
+class VariantAnimation;
+class ProfileDatabase;
+class TimePlotWidget  : public QWidget
 {
   Q_OBJECT;
 
+  ProfileDatabase *db_;
+  
  public:
-  TimelineWidget(QWidget *parent=0);
-  ~TimelineWidget();
+  TimePlotWidget(QWidget *parent=0);
+  ~TimePlotWidget();
 
-  size_t maximum() const { return max_value_; }
-  double resolution() const { return resolution_; }
-  size_t current() const { return current_index_; }
-  bool hoverActive() const { return hover_active_; }
-  size_t hoverIndex() const { return hover_index_; }    
-  size_t roiMinimum() const { return roi_min_; }
-  size_t roiMaximum() const { return roi_max_; }
-                   
+  QSize sizeHint() const;
+  
+  void setDatabase(ProfileDatabase *db);
+
  public Q_SLOTS:
-  void setMaximum(size_t max);
-  void setResolution(double resolution);
-
-  void setCurrent(size_t index);
-  void setHover(bool active, size_t index);
-  void setRoi(size_t min, size_t max);
+  void setActiveNode(int profile_key, int node_key);
 
  Q_SIGNALS:
-  void maximumChanged(size_t max);
-  void resolutionChanged(double resolution);
-  void currentChanged(size_t index);
-  void hoverChanged(bool active, size_t index);
-  void roiChanged(size_t min, size_t max);
-  
+  void activeNodeChanged(int profile_key, int node_key);
+
  protected:
-  QSize sizeHint() const;
-  void paintEvent(QPaintEvent *event);
-  void enterEvent(QEvent *event);
-  void leaveEvent(QEvent *event);
-  void mouseMoveEvent(QMouseEvent *event);
-  void mousePressEvent(QMouseEvent *event);
+  void paintEvent(QPaintEvent *);
   
- private:
-  size_t max_value_;
-  double resolution_;
-
-  size_t current_index_;
-  size_t hover_active_;
-  size_t hover_index_;
-
-  size_t roi_min_;
-  size_t roi_max_;
-};  // class TimelineWidget
+  void enterEvent(QEvent *);
+  void leaveEvent(QEvent *);
+  void mouseMoveEvent(QMouseEvent *);
+  void mousePressEvent(QMouseEvent *);
+  void mouseDoubleClickEvent(QMouseEvent *);
+};  // class TimePlotWidget
 }  // namespace swri_profiler_tools
-#endif  // SWRI_PROFILER_TOOLS_TIMELINE_WIDGET_H_
+#endif // SWRI_PROFILER_TOOLS_TIME_PLOT_WIDGET_H_

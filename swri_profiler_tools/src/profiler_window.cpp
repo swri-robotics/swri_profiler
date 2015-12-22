@@ -27,8 +27,8 @@
 // DAMAGE.
 //
 // *****************************************************************************
-
 #include <swri_profiler_tools/profiler_window.h>
+#include <swri_profiler_tools/profile_database.h>
 
 namespace swri_profiler_tools
 {
@@ -38,7 +38,7 @@ ProfilerWindow::ProfilerWindow(ProfileDatabase *db)
   db_(db)
 {
   ui.setupUi(this);
-
+  
   QObject::connect(ui.action_NewWindow, SIGNAL(triggered(bool)),
                    this, SIGNAL(createNewWindow()));
 
@@ -47,6 +47,7 @@ ProfilerWindow::ProfilerWindow(ProfileDatabase *db)
 
   ui.profileTree->setDatabase(db_);
   ui.partitionWidget->setDatabase(db_);
+  ui.timePlot->setDatabase(db_);
 
   QObject::connect(ui.profileTree, SIGNAL(activeNodeChanged(int,int)),
                    ui.partitionWidget, SLOT(setActiveNode(int,int)));

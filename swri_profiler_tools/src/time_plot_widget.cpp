@@ -27,42 +27,75 @@
 // DAMAGE.
 //
 // *****************************************************************************
-#ifndef SWRI_PROFILER_TOOLS_TIMELINE_WIDGET_TESTER_H_
-#define SWRI_PROFILER_TOOLS_TIMELINE_WIDGET_TESTER_H_
+#include <swri_profiler_tools/time_plot_widget.h>
 
-#include <QDialog>
-#include "ui_timeline_widget_tester.h"
+#include <QPainter>
+#include <QMouseEvent>
+
+#include <swri_profiler_tools/profile_database.h>
 
 namespace swri_profiler_tools
 {
-class TimelineWidgetTester : public QDialog
+TimePlotWidget::TimePlotWidget(QWidget *parent)
+  :
+  QWidget(parent),
+  db_(NULL)
 {
-  Q_OBJECT;
+  setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+}
 
- public:
-  TimelineWidgetTester(QWidget *parent=0);
-  ~TimelineWidgetTester();    
+TimePlotWidget::~TimePlotWidget()
+{
+}
 
- private Q_SLOTS:
-  void uiMaximumChanged(int idx);
-  void wiMaximumChanged(size_t idx);
+QSize TimePlotWidget::sizeHint() const
+{
+  return QSize(200, 200);
+}
 
-  void uiResolutionChanged(double resolution);
-  void wiResolutionChanged(double resolution);  
-  
-  void uiCurrentChanged(int idx);
-  void wiCurrentChanged(size_t idx);
+void TimePlotWidget::setDatabase(ProfileDatabase *db)
+{
+  if (db_) {
+    // note(exjohnson): we can implement this later if desired, but
+    // currently no use case for it.
+    qWarning("TimePlotWidget: Cannot change the profile database.");
+    return;
+  }
 
-  void uiHoverChanged();
-  void wiHoverChanged(bool active, size_t idx);
+  db_ = db;
+}
 
-  void uiRoiChanged();
-  void wiRoiChanged(size_t min, size_t max);
-  
- private:
-  Ui::TimelineWidgetTester ui;
+void TimePlotWidget::setActiveNode(int profile_key, int node_key)
+{
+}
 
-  void updateOutputs();
-};  // TimelineWidgetTester
+void TimePlotWidget::enterEvent(QEvent *event)
+{
+}
+
+void TimePlotWidget::leaveEvent(QEvent *event)
+{
+}
+
+void TimePlotWidget::mouseMoveEvent(QMouseEvent *event)
+{
+}
+
+void TimePlotWidget::mousePressEvent(QMouseEvent *event)
+{
+}
+
+void TimePlotWidget::mouseDoubleClickEvent(QMouseEvent *event)
+{
+}
+
+void TimePlotWidget::paintEvent(QPaintEvent *)
+{
+  QPainter painter(this);
+
+  painter.setPen(Qt::NoPen);
+  painter.fillRect(0, 0, width(), height(), QColor(255, 255, 255));
+  painter.setPen(Qt::black);
+      
+}    
 }  // namespace swri_profiler_tools
-#endif  // SWRI_PROFILER_TOOLS_TIMELINE_WIDGET_TESTER_H_

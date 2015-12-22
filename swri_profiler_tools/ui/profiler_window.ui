@@ -59,24 +59,10 @@
         </item>
        </layout>
       </widget>
-      <widget class="QGraphicsView" name="timeView"/>
      </widget>
     </item>
     <item>
-     <widget class="swri_profiler_tools::TimelineWidget" name="timelineWidget" native="true">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="baseSize">
-       <size>
-        <width>0</width>
-        <height>0</height>
-       </size>
-      </property>
-     </widget>
+     <widget class="swri_profiler_tools::TimePlotWidget" name="timePlot" native="true"/>
     </item>
    </layout>
   </widget>
@@ -131,9 +117,9 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>swri_profiler_tools::TimelineWidget</class>
+   <class>swri_profiler_tools::TimePlotWidget</class>
    <extends>QWidget</extends>
-   <header location="global">swri_profiler_tools/timeline_widget.h</header>
+   <header location="global">swri_profiler_tools/time_plot_widget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
