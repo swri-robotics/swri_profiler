@@ -102,17 +102,17 @@ void PartitionWidget::updateData()
 void PartitionWidget::paintEvent(QPaintEvent *)
 {
   QPainter painter(this);
-
-  painter.setPen(Qt::NoPen);
-  painter.fillRect(0, 0, width(), height(), QColor(255, 255, 255));
     
   if (current_layout_.empty()) {
+    QRect win_rect(0,0,width(), height());
+    painter.setBrush(Qt::white);
+    painter.drawRect(win_rect.adjusted(1,1,-1,-1));
     return;
   }
 
-
   QRectF data_rect = view_animator_->currentValue().toRectF();
-  QRectF win_rect(QPointF(0, 0), QPointF(width(), height()));  
+  QRectF win_rect(QPointF(0, 0), QPointF(width()-1, height()-1));
+  win_rect = win_rect.adjusted(1,1,-1,-1);
   win_from_data_ = getTransform(win_rect, data_rect);
 
   const Profile &profile = db_->profile(active_key_.profileKey());
@@ -264,6 +264,8 @@ void PartitionWidget::renderLayout(QPainter &painter,
   // Set painter to use a single-pixel black pen.
   painter.setPen(Qt::black);  
 
+  double right = layout.back().rect.right();
+  
   for (auto const &item : layout) {
     if (item.exclusive) {
       continue;
@@ -273,7 +275,7 @@ void PartitionWidget::renderLayout(QPainter &painter,
     QColor color = colorFromString(node.name());
 
     QRectF data_rect = item.rect;
-    data_rect.setRight(layout.size());
+    data_rect.setRight(right);
     QRectF win_rect = win_from_data.mapRect(data_rect);
     QRect int_rect = roundRectF(win_rect);
 
