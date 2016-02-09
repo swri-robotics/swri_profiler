@@ -399,7 +399,7 @@ GlobalProfile.prototype.rebuildIndex = function() {
   }
 };
 
-GlobalProfile.prototype.updateDerivedData = function(index) {  
+GlobalProfile.prototype.updateDerivedData = function(index) { 
   var update = function(node) {
     var children_call_count = 0;
     var children_abs_duration = 0;

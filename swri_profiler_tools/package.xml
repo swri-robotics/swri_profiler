@@ -1,0 +1,20 @@
+<package format="2">
+  <name>swri_profiler_tools</name>
+  <version>0.0.1</version>
+  <description>
+    Provides tools for viewing data produced by nodes that use the
+    swri_profiler library to output profiling information.    
+  </description>
+
+  <maintainer email="elliot.johnson@swri.org">Elliot Johnson</maintainer>
+  <license>Copyright SwRI</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <exec_depend>libqt4</exec_depend>
+
+  <depend>libqt4-dev</depend>
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>swri_profiler_msgs</depend>
+</package>
