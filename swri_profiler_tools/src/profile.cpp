@@ -300,7 +300,7 @@ void Profile::rebuildFlatIndex()
 }
 
 // Compares the first N items of two string lists.
-static bool compareInitialStringList(
+bool compareInitialStringList(
   const QStringList &list1,
   const QStringList &list2)
 {
