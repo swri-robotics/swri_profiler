@@ -2,8 +2,8 @@
 Changelog for package swri_profiler
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.3 (2016-11-23)
+------------------
 * Add Travis CI support
 * Contributors: P. J. Reed
 
