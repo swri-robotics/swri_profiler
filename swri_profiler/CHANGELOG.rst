@@ -2,8 +2,8 @@
 Changelog for package swri_profiler
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.2 (2016-11-23)
+------------------
 * Add missing runtime dependency on rosbridge_server
 * profiler_server no longer requires python 3
 * Update to profiler to handle unexpected case.

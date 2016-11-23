@@ -2,8 +2,8 @@
 Changelog for package swri_profiler_tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.2 (2016-11-23)
+------------------
 * Fixing some minor alignment issues in partition widget.
 * Removing the timeline widget, adding time plot widget.
 * Work on timeline, added timeline widget tester.
