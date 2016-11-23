@@ -2,14 +2,18 @@ cmake_minimum_required(VERSION 2.8.3)
 project(swri_profiler)
 
 set(BUILD_DEPS
+  diagnostic_updater
+  roscpp
   std_msgs 
   swri_profiler_msgs
-  roscpp)
+)
 
 set(RUNTIME_DEPS
+  diagnostic_updater
+  roscpp
   std_msgs 
   swri_profiler_msgs 
-  roscpp)
+)
 
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
