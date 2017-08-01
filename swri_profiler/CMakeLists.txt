@@ -4,6 +4,7 @@ project(swri_profiler)
 set(BUILD_DEPS
   diagnostic_updater
   roscpp
+  rospy
   std_msgs 
   swri_profiler_msgs
 )
@@ -11,6 +12,7 @@ set(BUILD_DEPS
 set(RUNTIME_DEPS
   diagnostic_updater
   roscpp
+  rospy
   std_msgs 
   swri_profiler_msgs 
 )
@@ -51,8 +53,15 @@ install(TARGETS ${PROJECT_NAME}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 
+catkin_install_python(PROGRAMS scripts/record_profiler_data scripts/profiler_server
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
 install(DIRECTORY launch
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
-# Need to install html directory at some point.
+install(DIRECTORY html/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/html
+)
+
