@@ -38,12 +38,22 @@ RosSourceBackend::RosSourceBackend()
   :
   is_connected_(false)
 {
-  // We have to store this as a local variable because ros::init()
-  // takes a non-const ref object.
-  int argc = QCoreApplication::argc();
-  ros::init(argc, QCoreApplication::argv(),
+  int argc = QCoreApplication::arguments().size();
+  std::vector<char*> argv;
+  // This is so ugly, but ros::init expects a "char**", so...
+  for (const auto& arg : QCoreApplication::arguments())
+  {
+    auto* temp_str = new char[arg.size()];
+    strcpy(temp_str, arg.toStdString().c_str());
+    argv.push_back(temp_str);
+  }
+  ros::init(argc, &argv[0],
             "profiler",
             ros::init_options::AnonymousName);
+  for (const auto& arg : argv)
+  {
+    delete[] arg;
+  }
 
   startTimer(50);
 }

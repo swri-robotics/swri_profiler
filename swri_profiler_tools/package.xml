@@ -7,13 +7,16 @@
   </description>
 
   <maintainer email="elliot.johnson@swri.org">Elliot Johnson</maintainer>
-  <license>Copyright SwRI</license>
+  <license>BSD</license>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>qt5-qmake</buildtool_depend>
 
-  <exec_depend>libqt4</exec_depend>
+  <exec_depend>libqt5-core</exec_depend>
+  <exec_depend>libqt5-gui</exec_depend>
+  <exec_depend>libqt5-widgets</exec_depend>
 
-  <depend>libqt4-dev</depend>
+  <depend>qtbase5-dev</depend>
   <depend>roscpp</depend>
   <depend>std_msgs</depend>
   <depend>swri_profiler_msgs</depend>
