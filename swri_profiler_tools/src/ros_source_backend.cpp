@@ -30,6 +30,7 @@
 
 #include <swri_profiler_tools/ros_source_backend.h>
 #include <QCoreApplication>
+#include <QStringList>
 #include <ros/ros.h>
 
 namespace swri_profiler_tools
