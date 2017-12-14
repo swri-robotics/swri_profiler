@@ -2,6 +2,11 @@
 Changelog for package swri_profiler_tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Kinetic compatibility
+* Contributors: Matthew Bries, P. J. Reed
+
 0.0.3 (2016-11-23)
 ------------------
 

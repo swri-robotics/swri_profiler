@@ -2,6 +2,9 @@
 Changelog for package swri_profiler_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.0.3 (2016-11-23)
 ------------------
 
