@@ -5,6 +5,8 @@
     Messages for the swri_profiler tool.
   </description>
   <maintainer email="elliot.johnson@swri.org">Elliot Johnson</maintainer>
+  <url type="repository">https://github.com/swri-robotics/swri_profiler.git</url>
+
   <license>Copyright SwRI</license>
 
   <buildtool_depend>catkin</buildtool_depend>
