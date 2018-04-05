@@ -2,6 +2,11 @@
 Changelog for package swri_profiler
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Install Python scripts & HTML files
+* Contributors: P. J. Reed
+
 0.0.3 (2016-11-23)
 ------------------
 * Add Travis CI support
