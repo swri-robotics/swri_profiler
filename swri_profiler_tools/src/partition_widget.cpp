@@ -354,7 +354,11 @@ void PartitionWidget::mousePressEvent(QMouseEvent *event)
 void PartitionWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
   QTransform data_from_win = win_from_data_.inverted();
+#if QT_VERSION >= 0x050000
+  int index = itemAtPoint(data_from_win.map(event->localPos()));
+#else
   int index = itemAtPoint(data_from_win.map(event->posF()));
+#endif
 
   if (index < 0) {
     return;
