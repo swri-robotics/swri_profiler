@@ -4,7 +4,7 @@
   <description>
     Messages for the swri_profiler tool.
   </description>
-  <maintainer email="elliot.johnson@swri.org">Elliot Johnson</maintainer>
+  <maintainer email="preed@swri.org">P. J. Reed</maintainer>
   <license>Copyright SwRI</license>
 
   <buildtool_depend>catkin</buildtool_depend>
