@@ -2,6 +2,13 @@
 Changelog for package swri_profiler
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update maintainers
+* Make master build on both Indigo and Kinetic
+* Install Python scripts & HTML files
+* Contributors: P. J. Reed
+
 0.1.0 (2017-12-14)
 ------------------
 
