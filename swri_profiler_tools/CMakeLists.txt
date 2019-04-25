@@ -11,7 +11,8 @@ set(RUNTIME_DEPS
   swri_profiler_msgs 
   roscpp)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+### Catkin ###
+find_package(catkin REQUIRED COMPONENTS ${BUILD_DEPS})
 
 ### QT ###
 if("$ENV{ROS_DISTRO}" STRLESS "kinetic")
@@ -34,27 +35,23 @@ else()
   set(Qt_INCLUDE_DIRS "${Qt5Core_INCLUDE_DIRS};${Qt5Gui_INCLUDE_DIRS};${Qt5Widgets_INCLUDE_DIRS}")
   set(Qt_LIBRARIES "${Qt5Core_LIBRARIES};${Qt5Gui_LIBRARIES};${Qt5Widgets_LIBRARIES}")
 endif()
-
-### Catkin ###
-find_package(catkin REQUIRED COMPONENTS ${BUILD_DEPS})
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include_directories(include
   ${catkin_INCLUDE_DIRS}
-  ${Qt_INCLUDE_DIRS})
-
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(src)
+  ${Qt_INCLUDE_DIRS}
+)
 
 catkin_package(
   CATKIN_DEPENDS ${RUNTIME_DEPS}
   INCLUDE_DIRS include
   DEPENDS Qt
-  LIBRARIES ${PROJECT_NAME})
+  LIBRARIES ${PROJECT_NAME}
+)
 
 set(UI_FILES
   ui/profiler_window.ui
-  )
+)
 
 set(MOC_HEADER_FILES
   include/swri_profiler_tools/profiler_window.h
@@ -67,7 +64,7 @@ set(MOC_HEADER_FILES
   include/swri_profiler_tools/partition_widget.h
   include/swri_profiler_tools/variant_animation.h
   include/swri_profiler_tools/time_plot_widget.h
-  )
+)
 
 set(SRC_FILES
   src/register_meta_types.cpp
@@ -82,7 +79,7 @@ set(SRC_FILES
   src/util.cpp
   src/partition_widget.cpp
   src/time_plot_widget.cpp
-  )
+)
 
 if("$ENV{ROS_DISTRO}" STRLESS "kinetic")
   qt4_add_resources(RCC_SRCS resources/images.qrc)
@@ -97,13 +94,17 @@ endif()
 add_executable(profiler 
   src/main.cpp
   ${SRC_FILES} 
-  ${RCC_SRCS})
+  ${RCC_SRCS}
+)
 target_link_libraries(profiler
   ${catkin_LIBRARIES}
   ${Qt_LIBRARIES}
-  )
+)
 
 add_dependencies(profiler swri_profiler_msgs_generate_messages_cpp)
+set_target_properties(profiler PROPERTIES
+  COMPILE_FLAGS "-std=c++0x"
+)
 
 ### Install Test Node and Headers ###
 

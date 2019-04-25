@@ -18,8 +18,6 @@ set(RUNTIME_DEPS
 )
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-
 ### Catkin ###
 find_package(catkin REQUIRED COMPONENTS ${BUILD_DEPS})
 
@@ -35,9 +33,15 @@ add_library(${PROJECT_NAME}
   src/profiler.cpp
   )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
+set_target_properties(${PROJECT_NAME} PROPERTIES
+  COMPILE_FLAGS "-std=c++0x"
+)
 
 add_executable(basic_profiler_example_node src/nodes/basic_profiler_example_node.cpp)
 target_link_libraries(basic_profiler_example_node ${PROJECT_NAME})
+set_target_properties(basic_profiler_example_node PROPERTIES
+  COMPILE_FLAGS "-std=c++0x"
+)
 
 add_dependencies(${PROJECT_NAME} swri_profiler_msgs_generate_messages_cpp)
 
