@@ -2,6 +2,18 @@
 Changelog for package swri_profiler_tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.0 (2019-04-18)
+------------------
+* Update maintainers
+* Make master build on both Indigo and Kinetic
+* Fix deps, cmakelist and localPos() to get working on indigo
+* Contributors: Matthew Bries, P. J. Reed
+
+0.1.0 (2017-12-14)
+------------------
+* Kinetic compatibility
+* Contributors: Matthew Bries, P. J. Reed
+
 0.0.3 (2016-11-23)
 ------------------
 

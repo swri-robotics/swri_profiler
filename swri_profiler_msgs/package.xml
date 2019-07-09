@@ -1,13 +1,13 @@
 <package format="2">
   <name>swri_profiler_msgs</name>
-  <version>0.0.3</version>
+  <version>0.2.0</version>
   <description>
     Messages for the swri_profiler tool.
   </description>
-  <maintainer email="elliot.johnson@swri.org">Elliot Johnson</maintainer>
-  <url type="repository">https://github.com/swri-robotics/swri_profiler.git</url>
 
-  <license>Copyright SwRI</license>
+  <maintainer email="preed@swri.org">P. J. Reed</maintainer>
+  <url type="repository">https://github.com/swri-robotics/swri_profiler.git</url>
+  <license>BSD</license>
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>message_generation</build_depend>
