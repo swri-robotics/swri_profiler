@@ -2,8 +2,8 @@
 Changelog for package swri_profiler
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.2 (2019-11-11)
+------------------
 * Update catkin dependencies for swri_profiler_tools
 * Enable c++11 support
 * Contributors: P. J. Reed
