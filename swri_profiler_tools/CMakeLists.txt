@@ -77,6 +77,9 @@ target_link_libraries(profiler
   Qt5::Gui
   Qt5::Widgets
 )
+set_target_properties(profiler PROPERTIES
+  COMPILE_FLAGS "-std=c++11"
+)
 
 ### Install Test Node and Headers ###
 
