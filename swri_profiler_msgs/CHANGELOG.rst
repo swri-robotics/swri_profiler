@@ -2,6 +2,9 @@
 Changelog for package swri_profiler_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.2.1 (2019-11-11)
 ------------------
 * Add repository url to package.xml
