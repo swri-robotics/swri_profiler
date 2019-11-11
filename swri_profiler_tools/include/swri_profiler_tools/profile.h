@@ -205,15 +205,15 @@ class Profile : public QObject
   ~Profile();
 
   void addData(const NewProfileDataVector &data);
-  const bool isValid() const { return profile_key_ >= 0; }
-  const int profileKey() const { return profile_key_; }
+  bool isValid() const { return profile_key_ >= 0; }
+  int profileKey() const { return profile_key_; }
 
   const QString& name() const { return name_; }
   void setName(const QString &name);
 
   const ProfileNode& node(int node_key) const;
   const ProfileNode& rootNode() const;
-  const int rootKey() const { return 0; }
+  int rootKey() const { return 0; }
   const std::vector<int>& nodeKeys() const;
   
  Q_SIGNALS:
