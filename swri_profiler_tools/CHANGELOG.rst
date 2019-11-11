@@ -2,8 +2,8 @@
 Changelog for package swri_profiler_tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.1 (2019-11-11)
+------------------
 * Clean up CMakeLists
 * Add repository url to package.xml
 * Contributors: Matthew Bries, P. J. Reed

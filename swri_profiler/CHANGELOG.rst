@@ -2,8 +2,8 @@
 Changelog for package swri_profiler
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.1 (2019-11-11)
+------------------
 * Add repository url to package.xml
 * Correct license tag in package.xml.
 * Clean up CMakeLists
