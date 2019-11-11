@@ -56,7 +56,7 @@ class BasicProfilerExampleNode
     }
   }
 
-  int superSlowFibonacci(int x)
+  void superSlowFibonacci(int x)
   {
     SWRI_PROFILE("super-slow-fibonacci");
     ROS_INFO("Fibonacci %d = %d", x, superSlowFibonacciInt(x));

@@ -34,13 +34,13 @@ add_library(${PROJECT_NAME}
   )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 set_target_properties(${PROJECT_NAME} PROPERTIES
-  COMPILE_FLAGS "-std=c++0x"
+  COMPILE_FLAGS "-std=c++11"
 )
 
 add_executable(basic_profiler_example_node src/nodes/basic_profiler_example_node.cpp)
 target_link_libraries(basic_profiler_example_node ${PROJECT_NAME})
 set_target_properties(basic_profiler_example_node PROPERTIES
-  COMPILE_FLAGS "-std=c++0x"
+  COMPILE_FLAGS "-std=c++11"
 )
 
 add_dependencies(${PROJECT_NAME} swri_profiler_msgs_generate_messages_cpp)
