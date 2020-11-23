@@ -11,13 +11,13 @@ except ImportError:
     import SocketServer as socketserver
 
 if len(sys.argv) < 2:
-  exit(2)
+    exit(2)
 
 try:
-  os.chdir(sys.argv[1])
-  print("Changing directory to:", sys.argv[1])
+    os.chdir(sys.argv[1])
+    print("Changing directory to:", sys.argv[1])
 except:
-  print("Error changing directory to:", sys.argv[1])
+    print("Error changing directory to:", sys.argv[1])
 
 if len(sys.argv) > 2:
     PORT = int(sys.argv[2])

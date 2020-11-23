@@ -1,34 +1,5 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 project(swri_profiler_tools)
-
-set(BUILD_DEPS
-  std_msgs 
-  swri_profiler_msgs
-  roscpp)
-
-set(RUNTIME_DEPS
-  std_msgs 
-  swri_profiler_msgs 
-  roscpp)
-
-### Catkin ###
-find_package(catkin REQUIRED COMPONENTS ${BUILD_DEPS})
-
-### QT ###
-find_package(Qt5Core REQUIRED)
-find_package(Qt5Gui REQUIRED)
-find_package(Qt5Widgets REQUIRED)
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-include_directories(include
-  ${catkin_INCLUDE_DIRS}
-)
-
-catkin_package(
-  CATKIN_DEPENDS ${RUNTIME_DEPS}
-  INCLUDE_DIRS include
-  LIBRARIES ${PROJECT_NAME}
-)
 
 set(UI_FILES
   ui/profiler_window.ui
@@ -62,30 +33,110 @@ set(SRC_FILES
   src/time_plot_widget.cpp
 )
 
+### QT ###
+find_package(Qt5Core REQUIRED)
+find_package(Qt5Gui REQUIRED)
+find_package(Qt5Widgets REQUIRED)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 qt5_add_resources(RCC_SRCS resources/images.qrc)
 qt5_wrap_ui(SRC_FILES ${UI_FILES})
-qt5_wrap_cpp(SRC_FILES ${MOC_HEADER_FILES})
 
-add_executable(profiler 
-  src/main.cpp
-  ${SRC_FILES} 
-  ${RCC_SRCS}
-)
-target_link_libraries(profiler
-  ${catkin_LIBRARIES}
-  Qt5::Core
-  Qt5::Gui
-  Qt5::Widgets
-)
-set_target_properties(profiler PROPERTIES
-  COMPILE_FLAGS "-std=c++11"
-)
+if (ENV{ROS_VERSION} STREQUAL "1")
+  qt5_wrap_cpp(SRC_FILES ${MOC_HEADER_FILES})
 
-### Install Test Node and Headers ###
+  add_executable(profiler
+    src/main.cpp
+    ${SRC_FILES}
+    ${RCC_SRCS}
+    )
 
-install(TARGETS
-  profiler
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-)
+  set(BUILD_DEPS
+    std_msgs
+    swri_profiler_msgs
+    roscpp)
+
+  set(RUNTIME_DEPS
+    std_msgs
+    swri_profiler_msgs
+    roscpp)
+
+  ### Catkin ###
+  find_package(catkin REQUIRED COMPONENTS ${BUILD_DEPS})
+
+  include_directories(include
+    ${catkin_INCLUDE_DIRS}
+  )
+
+  catkin_package(
+    CATKIN_DEPENDS ${RUNTIME_DEPS}
+    INCLUDE_DIRS include
+    LIBRARIES ${PROJECT_NAME}
+  )
+
+  target_link_libraries(profiler
+    ${catkin_LIBRARIES}
+    Qt5::Core
+    Qt5::Gui
+    Qt5::Widgets
+  )
+  set_target_properties(profiler PROPERTIES
+    COMPILE_FLAGS "-std=c++11"
+  )
+
+  ### Install Test Node and Headers ###
+
+  install(TARGETS
+    profiler
+    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  )
+else()
+  if(NOT CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 14)
+  endif()
+
+  qt5_wrap_cpp(SRC_FILES ${MOC_HEADER_FILES} OPTIONS "-DROS2_BUILD")
+
+  add_executable(profiler
+    src/main.cpp
+    ${SRC_FILES}
+    ${RCC_SRCS}
+    )
+
+  find_package(ament_cmake REQUIRED)
+  find_package(rclcpp REQUIRED)
+  find_package(std_msgs REQUIRED)
+  find_package(swri_profiler_msgs REQUIRED)
+
+  target_include_directories(profiler
+    PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+  )
+  target_compile_definitions(profiler
+    PUBLIC "-DROS2_BUILD"
+  )
+  target_link_libraries(profiler
+    PRIVATE
+      Qt5::Core
+      Qt5::Gui
+      Qt5::Widgets
+  )
+  ament_target_dependencies(profiler
+    PUBLIC
+      ament_cmake
+      rclcpp
+      std_msgs
+      swri_profiler_msgs
+  )
+
+  install(TARGETS
+    profiler
+    RUNTIME DESTINATION lib/${PROJECT_NAME}
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+  )
+  ament_package()
+endif()

@@ -12,19 +12,20 @@ import std_msgs.msg
 import swri_profiler_msgs as spm
 import swri_profiler_msgs.msg
 
+
 def get_ros_version_info():
     PACKAGE_NAME = 'swri_profiler'
     try:
         find_profiler_command = ['rospack', 'find', PACKAGE_NAME]
         profiler_path = subprocess.check_output(find_profiler_command).strip()
-    except subprocess.CalledProcessError, e:
+    except subprocess.CalledProcessError as e:
         rospy.logerr('Failed to find ROS package %s: %r' % (PACKAGE_NAME, e))
         return ''
 
     try: 
         wstool_command = ['wstool', 'info']
         wstool_info = subprocess.check_output(wstool_command, cwd=profiler_path).strip()
-    except subprocess.CalledProcessError, e:
+    except subprocess.CalledProcessError as e:
         rospy.logerr('Failed to run wstool info: %r' % (e,))
         return ''
 
