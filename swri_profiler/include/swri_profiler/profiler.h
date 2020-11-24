@@ -56,8 +56,8 @@ class Profiler
     rclcpp::Time t0;
     rclcpp::Time last_report_time;
 #else
-    ros::Time t0;
-    ros::Time last_report_time;
+    ros::WallTime t0;
+    ros::WallTime last_report_time;
 #endif
     OpenInfo() : last_report_time(0) {}
   };
@@ -127,7 +127,9 @@ class Profiler
 #endif
                    )
   {
+#ifdef ROS2_BUILD
     init_node(name);
+#endif
 
     if (!tls_.get()) { initializeTLS(); }
 

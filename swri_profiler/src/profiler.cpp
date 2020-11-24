@@ -64,14 +64,19 @@ static rclcpp::Time timeFromWall(const rclcpp::Time &src)
   return rclcpp::Time(src.seconds(), src.nanoseconds());
 }
 #else
+static ros::Duration durationFromWall(const ros::Duration &src)
+{
+  return src;
+}
+
 static ros::Duration durationFromWall(const ros::WallDuration &src)
 {
-  return ros::Duration(src.sec, src.nsec);
+  return {src.sec, src.nsec};
 }
 
 static ros::Time timeFromWall(const ros::WallTime &src)
 {
-  return ros::Time(src.sec, src.nsec);
+  return {src.sec, src.nsec};
 }
 #endif
 
@@ -301,9 +306,9 @@ void Profiler::collectAndPublish()
     size_t i = item.key - 1;
     msg.data[i].abs_call_count += item.abs_call_count;
     msg.data[i].abs_total_duration = durationFromWall(msg.data[i].abs_total_duration) +
-      rclcpp::Duration(item.abs_total_duration);
+      durationFromWall(item.abs_total_duration);
     msg.data[i].rel_total_duration = durationFromWall(msg.data[i].rel_total_duration) +
-      rclcpp::Duration(item.rel_total_duration);
+      durationFromWall(item.rel_total_duration);
     msg.data[i].rel_max_duration = std::max(
       durationFromWall(msg.data[i].rel_max_duration),
       durationFromWall(item.rel_max_duration));
