@@ -13,15 +13,17 @@
   <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
   <depend condition="$ROS_VERSION == 1">roscpp</depend>
   <depend condition="$ROS_VERSION == 1">rospy</depend>
+  <exec_depend condition="$ROS_VERSION == 1">rosbridge_server</exec_depend>
 
   <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
   <depend condition="$ROS_VERSION == 2">rclcpp</depend>
   <exec_depend condition="$ROS_VERSION == 2">rclpy</exec_depend>
 
+  <build_depend>libboost-thread-dev</build_depend>
   <depend>diagnostic_updater</depend>
   <depend>std_msgs</depend>
   <depend>swri_profiler_msgs</depend>
-  <exec_depend condition="$ROS_VERSION == 1">rosbridge_server</exec_depend>
+  <exec_depend>libboost-thread</build_depend>
 
   <export>
     <build_type condition="$ROS_VERSION == 1">catkin</build_type>
