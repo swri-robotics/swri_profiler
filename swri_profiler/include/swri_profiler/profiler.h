@@ -2,13 +2,21 @@
 #define SWRI_PROFILER_PROFILER_H_
 
 #include <algorithm>
+#include <boost/thread.hpp>
 #include <limits>
 #include <unordered_map>
 #include <atomic>
 
+#ifndef ROS2_BUILD
 #include <ros/time.h>
 #include <ros/console.h>
 #include <diagnostic_updater/diagnostic_updater.h>
+#else
+#include <rclcpp/duration.hpp>
+#include <rclcpp/logging.hpp>
+#include <rclcpp/time.hpp>
+#include <diagnostic_updater/diagnostic_updater.hpp>
+#endif
 
 namespace swri_profiler
 {
@@ -44,8 +52,13 @@ class Profiler
   // executing.
   struct OpenInfo
   {
+#ifdef ROS2_BUILD
+    rclcpp::Time t0;
+    rclcpp::Time last_report_time;
+#else
     ros::WallTime t0;
     ros::WallTime last_report_time;
+#endif
     OpenInfo() : last_report_time(0) {}
   };
 
@@ -54,10 +67,21 @@ class Profiler
   struct ClosedInfo
   {
     size_t count;
+#ifdef ROS2_BUILD
+    rclcpp::Duration total_duration;
+    rclcpp::Duration rel_duration;
+    rclcpp::Duration max_duration;
+#else
     ros::WallDuration total_duration;
     ros::WallDuration rel_duration;
-    ros::WallDuration max_duration;  
-    ClosedInfo() : count(0) {}
+    ros::WallDuration max_duration;
+#endif
+    ClosedInfo() :
+    count(0),
+    total_duration(0),
+    rel_duration(0),
+    max_duration(0)
+    {}
   };
 
   // Thread local storage for the profiler.
@@ -95,23 +119,43 @@ class Profiler
   static void profilerMain();
   static void collectAndPublish();
 
-  static bool open(const std::string &name, const ros::WallTime &t0)
+  static bool open(const std::string &name,
+#ifdef ROS2_BUILD
+                   const rclcpp::Time &t0
+#else
+                   const ros::WallTime &t0
+#endif
+                   )
   {
+#ifdef ROS2_BUILD
+    init_node(name);
+#endif
+
     if (!tls_.get()) { initializeTLS(); }
 
     if (name.empty()) {
-      ROS_ERROR("Profiler error: Profiled section has empty name. "
-                "Current stack is '%s'.",
-                tls_->stack_str.c_str());
+#ifdef ROS2_BUILD
+      RCLCPP_ERROR(rclcpp::get_logger(name),
+#else
+      ROS_ERROR(
+#endif
+        "Profiler error: Profiled section has empty name. "
+        "Current stack is '%s'.",
+        tls_->stack_str.c_str());
       return false;
     }
     
     if (tls_->stack_depth >= 100) {
-      ROS_ERROR("Profiler error: reached max stack size (%zu) while "
-                "opening '%s'. Current stack is '%s'.",
-                tls_->stack_depth,
-                name.c_str(),
-                tls_->stack_str.c_str());
+#ifdef ROS2_BUILD
+      RCLCPP_ERROR(node_->get_logger(),
+#else
+      ROS_ERROR(
+#endif
+        "Profiler error: reached max stack size (%zu) while "
+        "opening '%s'. Current stack is '%s'.",
+        tls_->stack_depth,
+        name.c_str(),
+        tls_->stack_str.c_str());
       return false;
     }
 
@@ -123,13 +167,23 @@ class Profiler
       SpinLockGuard guard(lock_);
       OpenInfo &info = open_blocks_[open_index];
       info.t0 = t0;
+#ifdef ROS2_BUILD
+      info.last_report_time = rclcpp::Time(0,0);
+#else
       info.last_report_time = ros::WallTime(0,0);
+#endif
     }
 
     return true;
   }
   
-  static void close(const std::string &name, const ros::WallTime &tf)
+  static void close(const std::string &name,
+#ifdef ROS2_BUILD
+                    const rclcpp::Time &tf
+#else
+                    const ros::WallTime &tf
+#endif
+                    )
   {    
     std::string open_index = tls_->thread_prefix + tls_->stack_str;
     {
@@ -137,13 +191,23 @@ class Profiler
 
       auto const open_it = open_blocks_.find(open_index);
       if (open_it == open_blocks_.end()) {
-        ROS_ERROR("Missing entry for '%s' in open_index. Profiler is probably corrupted.",
-                  name.c_str());
+#ifdef ROS2_BUILD
+        RCLCPP_ERROR(node_->get_logger(),
+#else
+        ROS_ERROR(
+#endif
+          "Missing entry for '%s' in open_index. Profiler is probably corrupted.",
+          name.c_str());
         return;
       }
-      
+
+#ifdef ROS2_BUILD
+      rclcpp::Duration abs_duration = tf - open_it->second.t0;
+      rclcpp::Duration rel_duration(0);
+#else
       ros::WallDuration abs_duration = tf - open_it->second.t0;
       ros::WallDuration rel_duration;
+#endif
       if (open_it->second.last_report_time > open_it->second.t0) {
         rel_duration = tf - open_it->second.last_report_time;
       } else {
@@ -158,8 +222,8 @@ class Profiler
         info.max_duration = abs_duration;
         info.rel_duration = rel_duration;
       } else {
-        info.total_duration += abs_duration;
-        info.rel_duration += rel_duration;
+        info.total_duration = info.total_duration + abs_duration;
+        info.rel_duration = info.rel_duration + rel_duration;
         info.max_duration = std::max(info.max_duration, abs_duration);
       }
     }
@@ -171,21 +235,55 @@ class Profiler
 
  private:
   std::string name_;
+
+#ifdef ROS2_BUILD
+  static std::shared_ptr<rclcpp::Node> node_;
+#endif
   
  public:
   Profiler(const std::string &name)
   {
-    if (open(name, ros::WallTime::now())) {
+    if (open(name,
+#ifdef ROS2_BUILD
+             rclcpp::Clock().now()
+#else
+             ros::WallTime::now()
+#endif
+             )) {
       name_ = name;
+
     } else {
       name_ = "";
     }
   }
+
+#ifdef ROS2_BUILD
+  static void init_node(const std::string& name)
+  {
+    if (!Profiler::node_)
+    {
+      // Create an "anonymous" name for our profiler node; this is the same way ROS1 generated
+      // anonymous names, but ROS2 doesn't have a convenience function for it yet.
+      std::stringstream node_name;
+      node_name << "swri_profiler";
+      char buf[200];
+      std::snprintf(buf, sizeof(buf), "_%llu", (unsigned long long)rclcpp::Clock().now().nanoseconds());
+      node_name << buf;
+      Profiler::node_ = std::make_shared<rclcpp::Node>(node_name.str());
+    }
+  }
+#endif
   
   ~Profiler()
   {
     if (!name_.empty()) {
-      close(name_, ros::WallTime::now());
+      close(name_,
+#ifdef ROS2_BUILD
+            rclcpp::Clock().now()
+#else
+            ros::WallTime::now()
+#endif
+            );
     }
   }
 };  

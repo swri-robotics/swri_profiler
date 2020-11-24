@@ -31,7 +31,13 @@
 #include <swri_profiler_tools/ros_source_backend.h>
 #include <QCoreApplication>
 #include <QStringList>
+
+#ifdef ROS2_BUILD
+#include <rclcpp/rclcpp.hpp>
+#include <functional>
+#else
 #include <ros/ros.h>
+#endif
 
 namespace swri_profiler_tools
 {
@@ -48,9 +54,13 @@ RosSourceBackend::RosSourceBackend()
     strcpy(temp_str, arg.toStdString().c_str());
     argv.push_back(temp_str);
   }
+#ifdef ROS2_BUILD
+  rclcpp::init(argc, &argv[0]);
+#else
   ros::init(argc, &argv[0],
             "profiler",
             ros::init_options::AnonymousName);
+#endif
   for (const auto& arg : argv)
   {
     delete[] arg;
@@ -61,53 +71,106 @@ RosSourceBackend::RosSourceBackend()
   
 RosSourceBackend::~RosSourceBackend()
 {
+#ifdef ROS2_BUILD
+  if (rclcpp::ok())
+  {
+    rclcpp::shutdown();
+  }
+#else
   if (ros::isStarted()) {
     ros::shutdown();
     ros::waitForShutdown();
   }
+#endif
 }
 
 void RosSourceBackend::startRos()
 {
+#ifdef ROS2_BUILD
+  std::stringstream node_name;
+  node_name << "profiler";
+  char buf[200];
+  std::snprintf(buf, sizeof(buf), "_%llu", (unsigned long long)rclcpp::Clock().now().nanoseconds());
+  node_name << buf;
+  node_ = std::make_shared<rclcpp::Node>(node_name.str());
+#else
   ros::start();
+  ros::NodeHandle nh;
+#endif
+
   is_connected_ = true;
 
-  ros::NodeHandle nh;
+#ifdef ROS2_BUILD
+  index_sub_ = node_->create_subscription<swri_profiler_msgs::msg::ProfileIndexArray>(
+    "/profiler/index",
+    rclcpp::QoS(1000).transient_local(),
+    [this] (const swri_profiler_msgs::msg::ProfileIndexArray::SharedPtr msg) {
+      handleIndex(msg);
+    });
+  data_sub_ = node_->create_subscription<swri_profiler_msgs::msg::ProfileDataArray>(
+    "/profiler/data",
+    1000,
+    [this] (const swri_profiler_msgs::msg::ProfileDataArray::SharedPtr msg) {
+      handleData(msg);
+    });
+  std::string uri = "N/A";
+#else
   index_sub_ = nh.subscribe("/profiler/index", 1000, &RosSourceBackend::handleIndex, this);
   data_sub_ = nh.subscribe("/profiler/data", 1000, &RosSourceBackend::handleData, this);
-
   std::string uri = ros::master::getURI();
+#endif
+
   Q_EMIT connected(true, QString::fromStdString(uri));
 }
 
 void RosSourceBackend::stopRos()
 {
+#ifdef ROS2_BUILD
+  rclcpp::shutdown();
+#else
   ros::shutdown();
+#endif
   is_connected_ = false;
   Q_EMIT connected(false, QString());
 }
 
 void RosSourceBackend::timerEvent(QTimerEvent *event)
 {
+#ifdef ROS2_BUILD
+  bool master_status = rclcpp::ok();
+#else
   bool master_status = ros::master::check();
+#endif
 
   if (!is_connected_ && master_status) {
     startRos();
   } else if (is_connected_ && !master_status) {
     stopRos();
   } else if (is_connected_ && master_status) {
+#ifdef ROS2_BUILD
+    rclcpp::spin_some(node_);
+#else
     ros::spinOnce();
+#endif
   }    
 }
 
-void RosSourceBackend::handleIndex(const swri_profiler_msgs::ProfileIndexArray &msg)
+#ifdef ROS2_BUILD
+void RosSourceBackend::handleIndex(const swri_profiler_msgs::msg::ProfileIndexArray::SharedPtr& msg)
+#else
+void RosSourceBackend::handleIndex(const swri_profiler_msgs::ProfileIndexArrayPtr &msg)
+#endif
 {
-  Q_EMIT indexReceived(msg);
+  Q_EMIT indexReceived(*msg);
 }
 
-void RosSourceBackend::handleData(const swri_profiler_msgs::ProfileDataArray &msg)
+#ifdef ROS2_BUILD
+void RosSourceBackend::handleData(const swri_profiler_msgs::msg::ProfileDataArray::SharedPtr& msg)
+#else
+void RosSourceBackend::handleData(const swri_profiler_msgs::ProfileDataArrayPtr &msg)
+#endif
 {
-  Q_EMIT dataReceived(msg);
+  Q_EMIT dataReceived(*msg);
 }
 
 }  // namespace swri_profiler_tools

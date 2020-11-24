@@ -32,25 +32,43 @@
 #define SWRI_PROFILER_TOOLS_ROS_SOURCE_BACKEND_H_
 
 #include <QObject>
+#ifdef ROS2_BUILD
+#include <rclcpp/node.hpp>
+#include <rclcpp/subscription.hpp>
+#include <swri_profiler_msgs/msg/profile_index_array.hpp>
+#include <swri_profiler_msgs/msg/profile_data_array.hpp>
+#else
 #include <ros/subscriber.h>
 #include <swri_profiler_msgs/ProfileIndexArray.h>
 #include <swri_profiler_msgs/ProfileDataArray.h>
+#endif
 
 namespace swri_profiler_tools
 {
 class RosSourceBackend : public QObject
 {
   Q_OBJECT;
-
+#ifdef ROS2_BUILD
+  rclcpp::Subscription<swri_profiler_msgs::msg::ProfileIndexArray>::SharedPtr index_sub_;
+  rclcpp::Subscription<swri_profiler_msgs::msg::ProfileDataArray>::SharedPtr data_sub_;
+  std::shared_ptr<rclcpp::Node> node_;
+#else
   ros::Subscriber index_sub_;
-  ros::Subscriber data_sub_;  
+  ros::Subscriber data_sub_;
+#endif
 
   bool is_connected_;  
   
  Q_SIGNALS:
   void connected(bool connected, QString uri);
+
+#ifdef ROS2_BUILD
+  void indexReceived(swri_profiler_msgs::msg::ProfileIndexArray);
+  void dataReceived(swri_profiler_msgs::msg::ProfileDataArray);
+#else
   void indexReceived(swri_profiler_msgs::ProfileIndexArray);
   void dataReceived(swri_profiler_msgs::ProfileDataArray);
+#endif
 
  public:
   RosSourceBackend();
@@ -62,8 +80,13 @@ class RosSourceBackend : public QObject
   
   void timerEvent(QTimerEvent *event);
 
-  void handleIndex(const swri_profiler_msgs::ProfileIndexArray &msg);
-  void handleData(const swri_profiler_msgs::ProfileDataArray &msg);
+#ifdef ROS2_BUILD
+  void handleIndex(const swri_profiler_msgs::msg::ProfileIndexArray::SharedPtr& msg);
+  void handleData(const swri_profiler_msgs::msg::ProfileDataArray::SharedPtr& msg);
+#else
+  void handleIndex(const swri_profiler_msgs::ProfileIndexArrayPtr &msg);
+  void handleData(const swri_profiler_msgs::ProfileDataArrayPtr &msg);
+#endif
 };  // class RosSourceBackend
 }  // namespace swri_profiler_tools
 #endif  // SWRI_PROFILER_TOOLS_ROS_SOURCE_BACKEND_H_

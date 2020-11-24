@@ -1,9 +1,25 @@
+#ifdef ROS2_BUILD
+#include <chrono>
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp/subscription.hpp>
+#include <std_msgs/msg/int32.hpp>
+
+using namespace std::chrono_literals;
+
+#else
 #include <ros/ros.h>
-#include <swri_profiler/profiler.h>
 #include <std_msgs/Int32.h>
+#endif
+#include <swri_profiler/profiler.h>
 
 class BasicProfilerExampleNode
 {
+#ifdef ROS2_BUILD
+  std::shared_ptr<rclcpp::Node> nh_;
+  std::shared_ptr<rclcpp::TimerBase> init_timer_;
+  std::shared_ptr<rclcpp::TimerBase> update_timer_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr int_callback_;
+#else
   ros::NodeHandle nh_;
   ros::NodeHandle pnh_;
   
@@ -11,6 +27,7 @@ class BasicProfilerExampleNode
   ros::Timer update_timer_;
 
   ros::Subscriber int_callback_;
+#endif
 
   int fibonacci_index1_;
   int fibonacci_index2_;
@@ -18,21 +35,55 @@ class BasicProfilerExampleNode
  public:
   BasicProfilerExampleNode()
   {
+#ifdef ROS2_BUILD
+    nh_ = std::make_shared<rclcpp::Node>("basic_profiler_example_node");
+#else
     pnh_ = ros::NodeHandle("~");
+#endif
     
     // Setup a one-shot timer to initialize the node after a brief
     // delay so that /rosout is always fully initialized.
+#ifdef ROS2_BUILD
+    RCLCPP_INFO(nh_->get_logger(), "Starting initialization timer...");
+    initialize();
+#else
     ROS_INFO("Starting initialization timer...");
     init_timer_ = nh_.createWallTimer(ros::WallDuration(1.0),
                                       &BasicProfilerExampleNode::initialize,
                                       this,                                      
-                                      true);    
+                                      true);
+#endif
   }
 
-  void initialize(const ros::WallTimerEvent &ignored)
+#ifdef ROS2_BUILD
+  std::shared_ptr<rclcpp::Node> get_node()
   {
-    (void)ignored;
+    return nh_;
+  }
+#endif
 
+#ifdef ROS2_BUILD
+  void initialize()
+  {
+    nh_->declare_parameter("fibonacci_index1", 30);
+    nh_->declare_parameter("fibonacci_index2", 40);
+    fibonacci_index1_ = nh_->get_parameter("fibonacci_index1").as_int();
+    fibonacci_index2_ = nh_->get_parameter("fibonacci_index2").as_int();
+
+    update_timer_ = nh_->create_wall_timer(100ms,
+                                           std::bind(&BasicProfilerExampleNode::handleUpdateTimer, this));
+
+    int_callback_ = nh_->create_subscription<std_msgs::msg::Int32>(
+      "trigger_fibonacci",
+      10,
+      [this] (std_msgs::msg::Int32::SharedPtr msg) {
+        handleTriggerFibonacci(msg);
+      });
+      //std::bind(&BasicProfilerExampleNode::handleTriggerFibonacci, this, _1));
+  }
+#else
+  void initialize(const ros::WallTimerEvent &/*ignored*/)
+  {
     pnh_.param("fibonacci_index1", fibonacci_index1_, 30);
     pnh_.param("fibonacci_index2", fibonacci_index2_, 40);
 
@@ -44,6 +95,7 @@ class BasicProfilerExampleNode
                                   &BasicProfilerExampleNode::handleTriggerFibonacci,
                                   this);
   }
+#endif
   
   int superSlowFibonacciInt(int x)
   {
@@ -59,12 +111,20 @@ class BasicProfilerExampleNode
   void superSlowFibonacci(int x)
   {
     SWRI_PROFILE("super-slow-fibonacci");
-    ROS_INFO("Fibonacci %d = %d", x, superSlowFibonacciInt(x));
+#ifdef ROS2_BUILD
+    RCLCPP_INFO(nh_->get_logger(),
+#else
+    ROS_INFO(
+#endif
+      "Fibonacci %d = %d", x, superSlowFibonacciInt(x));
   }
 
-  void handleUpdateTimer(const ros::TimerEvent &ignored)
+#ifdef ROS2_BUILD
+  void handleUpdateTimer()
+#else
+  void handleUpdateTimer(const ros::TimerEvent &/*ignored*/)
+#endif
   {
-    (void)ignored;
     SWRI_PROFILE("handle-update-timer");
 
     {
@@ -78,7 +138,13 @@ class BasicProfilerExampleNode
     }
   }
 
-  void handleTriggerFibonacci(const std_msgs::Int32ConstPtr &msg)
+  void handleTriggerFibonacci(
+#ifdef ROS2_BUILD
+    std_msgs::msg::Int32::SharedPtr msg
+#else
+    const std_msgs::Int32ConstPtr &msg
+#endif
+    )
   {
     SWRI_PROFILE("handle-trigger-fibonacci");
     superSlowFibonacci(msg->data);
@@ -87,10 +153,19 @@ class BasicProfilerExampleNode
 
 int main(int argc, char **argv)
 {
+#ifdef ROS2_BUILD
+  rclcpp::init(argc, argv);
+#else
   ros::init(argc, argv, "basic_profiler_example");
+#endif
 
   BasicProfilerExampleNode node;
+
+#ifdef ROS2_BUILD
+  rclcpp::spin(node.get_node());
+#else
   ros::spin();
+#endif
   
   return 0;  
 }

@@ -11,7 +11,11 @@ ProfilerMsgAdapter::~ProfilerMsgAdapter()
 {
 }
 
+#ifdef ROS2_BUILD
+void ProfilerMsgAdapter::processIndex(const swri_profiler_msgs::msg::ProfileIndexArray &msg)
+#else
 void ProfilerMsgAdapter::processIndex(const swri_profiler_msgs::ProfileIndexArray &msg)
+#endif
 {
   const QString ros_node_name =
     normalizeNodePath(QString::fromStdString(msg.header.frame_id));
@@ -44,7 +48,12 @@ void ProfilerMsgAdapter::processIndex(const swri_profiler_msgs::ProfileIndexArra
 
 bool ProfilerMsgAdapter::processData(
   NewProfileDataVector &out_data,
+#ifdef ROS2_BUILD
+  const swri_profiler_msgs::msg::ProfileDataArray &msg)
+#else
   const swri_profiler_msgs::ProfileDataArray &msg)
+#endif
+
 {
   const QString node_name(QString::fromStdString(msg.header.frame_id));
 
@@ -53,7 +62,11 @@ bool ProfilerMsgAdapter::processData(
     return false;
   }
 
+#ifdef ROS2_BUILD
+  int timestamp_sec = std::round(msg.header.stamp.sec);
+#else
   int timestamp_sec = std::round(msg.header.stamp.toSec());
+#endif
 
   NewProfileDataVector out;
   out.reserve(msg.data.size());
@@ -68,11 +81,18 @@ bool ProfilerMsgAdapter::processData(
     out.emplace_back();
     out.back().label = index_[node_name][item.key];
     out.back().wall_stamp_sec = timestamp_sec;
-    out.back().ros_stamp_ns = msg.rostime_stamp.toNSec();
     out.back().cumulative_call_count = item.abs_call_count;
+#ifdef ROS2_BUILD
+    out.back().ros_stamp_ns = msg.rostime_stamp.sec;
+    out.back().cumulative_inclusive_duration_ns = item.abs_total_duration.sec;
+    out.back().incremental_inclusive_duration_ns = item.rel_total_duration.sec;
+    out.back().incremental_max_duration_ns = item.rel_max_duration.sec;
+#else
+    out.back().ros_stamp_ns = msg.rostime_stamp.toNSec();
     out.back().cumulative_inclusive_duration_ns = item.abs_total_duration.toNSec();
     out.back().incremental_inclusive_duration_ns = item.rel_total_duration.toNSec();
     out.back().incremental_max_duration_ns = item.rel_max_duration.toNSec();
+#endif
   }
 
   out_data.insert(out_data.end(), out.begin(), out.end());

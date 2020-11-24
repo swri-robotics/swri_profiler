@@ -33,8 +33,13 @@
 
 #include <QObject>
 #include <QThread>
+#ifdef ROS2_BUILD
+#include <swri_profiler_msgs/msg/profile_index_array.hpp>
+#include <swri_profiler_msgs/msg/profile_data_array.hpp>
+#else
 #include <swri_profiler_msgs/ProfileIndexArray.h>
 #include <swri_profiler_msgs/ProfileDataArray.h>
+#endif
 
 #include <swri_profiler_tools/profiler_msg_adapter.h>
 
@@ -66,8 +71,14 @@ class RosSource : public QObject
 
  private Q_SLOTS:
   void handleConnected(bool connected, QString uri);
+
+#ifdef ROS2_BUILD
+  void handleIndex(swri_profiler_msgs::msg::ProfileIndexArray msg);
+  void handleData(swri_profiler_msgs::msg::ProfileDataArray msg);
+#else
   void handleIndex(swri_profiler_msgs::ProfileIndexArray msg);
   void handleData(swri_profiler_msgs::ProfileDataArray msg);
+#endif
   
  private:
   ProfileDatabase *db_;

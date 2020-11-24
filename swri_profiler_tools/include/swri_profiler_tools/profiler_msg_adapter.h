@@ -34,8 +34,13 @@
 #include <map>
 #include <QString>
 #include <swri_profiler_tools/new_profile_data.h>
+#ifdef ROS2_BUILD
+#include <swri_profiler_msgs/msg/profile_index_array.hpp>
+#include <swri_profiler_msgs/msg/profile_data_array.hpp>
+#else
 #include <swri_profiler_msgs/ProfileIndexArray.h>
 #include <swri_profiler_msgs/ProfileDataArray.h>
+#endif
 
 namespace swri_profiler_tools
 {
@@ -49,8 +54,13 @@ class ProfilerMsgAdapter
   ProfilerMsgAdapter();
   ~ProfilerMsgAdapter();
 
+#ifdef ROS2_BUILD
+  void processIndex(const swri_profiler_msgs::msg::ProfileIndexArray &msg);
+  bool processData(NewProfileDataVector &out_data, const swri_profiler_msgs::msg::ProfileDataArray &msg);
+#else
   void processIndex(const swri_profiler_msgs::ProfileIndexArray &msg);
   bool processData(NewProfileDataVector &out_data, const swri_profiler_msgs::ProfileDataArray &msg);
+#endif
   void reset();
 };  // class ProfilerMsgAdapter
 }  // namespace swri_profiler_tools

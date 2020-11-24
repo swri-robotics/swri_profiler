@@ -5,13 +5,13 @@ uint64 abs_call_count
 # The number of times this block has been started since the profiler
 # started.
 
-builtin_interfaces/Duration abs_total_duration
+duration abs_total_duration
 # The total amount of time spent in this block since the profiler
 # started, including any current calls.
 
-builtin_interfaces/Duration rel_total_duration
+duration rel_total_duration
 # The amount of time spent in this block since the previous report.
 
-builtin_interfaces/Duration rel_max_duration
+duration rel_max_duration
 # The maximum amount of time spent in this call since the last report.
 
