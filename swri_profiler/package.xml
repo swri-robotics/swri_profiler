@@ -23,7 +23,7 @@
   <depend>diagnostic_updater</depend>
   <depend>std_msgs</depend>
   <depend>swri_profiler_msgs</depend>
-  <exec_depend>libboost-thread</build_depend>
+  <exec_depend>libboost-thread</exec_depend>
 
   <export>
     <build_type condition="$ROS_VERSION == 1">catkin</build_type>
