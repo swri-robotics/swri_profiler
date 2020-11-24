@@ -42,7 +42,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 qt5_add_resources(RCC_SRCS resources/images.qrc)
 qt5_wrap_ui(SRC_FILES ${UI_FILES})
 
-if (ENV{ROS_VERSION} STREQUAL "1")
+if ($ENV{ROS_VERSION} EQUAL 1)
   qt5_wrap_cpp(SRC_FILES ${MOC_HEADER_FILES})
 
   add_executable(profiler

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(swri_profiler_msgs)
 
-if (ENV{ROS_VERSION} STREQUAL "1")
+if ($ENV{ROS_VERSION} EQUAL 1)
   find_package(
     catkin REQUIRED COMPONENTS
     message_generation
@@ -9,17 +9,16 @@ if (ENV{ROS_VERSION} STREQUAL "1")
   )
 
   add_message_files(
-    DIRECTORY msg
-    FILES
-    ProfileIndex.msg
-    ProfileIndexArray.msg
-  )
-
-  add_message_files(
     DIRECTORY ros1_msg
     FILES
     ProfileData.msg
     ProfileDataArray.msg
+  )
+  add_message_files(
+    DIRECTORY msg
+    FILES
+    ProfileIndex.msg
+    ProfileIndexArray.msg
   )
 
   generate_messages(

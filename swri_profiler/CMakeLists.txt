@@ -3,7 +3,7 @@ project(swri_profiler)
 
 find_package(Boost REQUIRED COMPONENTS thread)
 
-if (ENV{ROS_VERSION} STREQUAL "1")
+if ($ENV{ROS_VERSION} EQUAL 1)
   set(BUILD_DEPS
     diagnostic_updater
     std_msgs

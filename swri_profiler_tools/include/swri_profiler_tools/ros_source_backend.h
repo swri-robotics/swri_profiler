@@ -84,8 +84,8 @@ class RosSourceBackend : public QObject
   void handleIndex(const swri_profiler_msgs::msg::ProfileIndexArray::SharedPtr& msg);
   void handleData(const swri_profiler_msgs::msg::ProfileDataArray::SharedPtr& msg);
 #else
-  void handleIndex(const swri_profiler_msgs::ProfileIndexArray &msg);
-  void handleData(const swri_profiler_msgs::ProfileDataArray &msg);
+  void handleIndex(const swri_profiler_msgs::ProfileIndexArrayPtr &msg);
+  void handleData(const swri_profiler_msgs::ProfileDataArrayPtr &msg);
 #endif
 };  // class RosSourceBackend
 }  // namespace swri_profiler_tools

@@ -167,7 +167,7 @@ void RosSourceBackend::handleIndex(const swri_profiler_msgs::ProfileIndexArrayPt
 #ifdef ROS2_BUILD
 void RosSourceBackend::handleData(const swri_profiler_msgs::msg::ProfileDataArray::SharedPtr& msg)
 #else
-void RosSourceBackend::handleData(const swri_profiler_msgs::ProfileIndexArrayPtr &msg)
+void RosSourceBackend::handleData(const swri_profiler_msgs::ProfileDataArrayPtr &msg)
 #endif
 {
   Q_EMIT dataReceived(*msg);
